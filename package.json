@@ -7,7 +7,7 @@
 		"builder": "./dist/builder-cli"
 	},
 	"scripts": {
-		"compile": "tsc -p ./",
+		"build": "rm -rf ./dist && tsc",
 		"test": "jest --forceExit --config=jest.config.json --coverage"
 	},
 	"dependencies": {
