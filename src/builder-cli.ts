@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import {Task, Tasks, registeredTasks} from './builder';
 import {ChildProcess, execFile} from 'child_process';
 import * as treeKill from 'tree-kill';
