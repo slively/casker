@@ -4,7 +4,7 @@
 	"license": "MIT",
 	"types": "./dist/builder.d.ts",
 	"bin": {
-		"builder": "./dist/builder-cli"
+		"builder": "./dist/builder-cli.js"
 	},
 	"scripts": {
 		"build": "rm -rf ./dist && tsc",
