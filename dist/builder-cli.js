@@ -50,7 +50,7 @@ var logFailureAndExit = function (e) {
     process.exit(1);
 };
 Builder.launch({
-    cwd: process.cwd()
+    cwd: argv.cwd
 }, function (env) {
     var taskName = argv._[0];
     if (!env.configPath) {
@@ -127,8 +127,8 @@ Builder.launch({
             currentDepth = currentDepth
                 .map(function (currentDepthTask) {
                 return currentDepthTask instanceof ModuleTask
-                    ? [currentDepthTask.dependency]
-                    : currentDepthTask.tasks.map(function (tasksTask) { return tasksTask instanceof ModuleTask ? tasksTask.dependency : tasksTask; });
+                    ? [currentDepthTask.dependsOn]
+                    : currentDepthTask.tasks.map(function (tasksTask) { return tasksTask instanceof ModuleTask ? tasksTask.dependsOn : tasksTask; });
             })
                 .reduce(function (acc, tasks) { return acc.concat(tasks); }, [])
                 .filter(function (item) { return item !== undefined; });

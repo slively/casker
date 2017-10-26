@@ -4,7 +4,7 @@ export declare type CreateTaskOptions = {
     env?: object;
     isLongRunning?: boolean;
     description?: string;
-    dependency?: Task | Tasks;
+    dependsOn?: Task | Tasks;
     onExit?: Task | Tasks;
 };
 export declare class Task {
@@ -14,9 +14,9 @@ export declare class Task {
     readonly env: object;
     readonly isLongRunning: boolean;
     readonly description: string;
-    readonly dependency: Task | Tasks | undefined;
+    readonly dependsOn: Task | Tasks | undefined;
     readonly onExit: Task | Tasks | undefined;
-    constructor(name: string, cmd: string, cwd: string, env?: object, isLongRunning?: boolean, description?: string, dependency?: Task | Tasks | undefined, onExit?: Task | Tasks | undefined);
+    constructor(name: string, cmd: string, cwd: string, env?: object, isLongRunning?: boolean, description?: string, dependsOn?: Task | Tasks | undefined, onExit?: Task | Tasks | undefined);
 }
 export declare class Tasks {
     readonly name: string;

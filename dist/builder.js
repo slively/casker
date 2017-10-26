@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var logger_1 = require("./logger");
 exports.registeredTasks = new Map();
 var Task = (function () {
-    function Task(name, cmd, cwd, env, isLongRunning, description, dependency, onExit) {
+    function Task(name, cmd, cwd, env, isLongRunning, description, dependsOn, onExit) {
         if (env === void 0) { env = {}; }
         if (isLongRunning === void 0) { isLongRunning = false; }
         if (description === void 0) { description = ''; }
@@ -13,7 +13,7 @@ var Task = (function () {
         this.env = env;
         this.isLongRunning = isLongRunning;
         this.description = description;
-        this.dependency = dependency;
+        this.dependsOn = dependsOn;
         this.onExit = onExit;
     }
     return Task;
@@ -55,8 +55,8 @@ var TaskBuilder = (function () {
         };
         this.task = function (name, cmd, options) {
             if (options === void 0) { options = {}; }
-            var env = options.env, isLongRunning = options.isLongRunning, description = options.description, dependency = options.dependency, onExit = options.onExit;
-            var t = new Task("" + (_this.namespace.length ? _this.namespace + ":" : '') + name, cmd, _this.cwd, env, isLongRunning, description, dependency, onExit);
+            var env = options.env, isLongRunning = options.isLongRunning, description = options.description, dependsOn = options.dependsOn, onExit = options.onExit;
+            var t = new Task("" + (_this.namespace.length ? _this.namespace + ":" : '') + name, cmd, _this.cwd, env, isLongRunning, description, dependsOn, onExit);
             _this.registerTask(t);
             return t;
         };

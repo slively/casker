@@ -7,7 +7,7 @@ export type CreateTaskOptions = {
 	env?: object;
 	isLongRunning?: boolean;
 	description?: string;
-	dependency?: Task | Tasks;
+	dependsOn?: Task | Tasks;
 	onExit?: Task | Tasks;
 }
 
@@ -18,7 +18,7 @@ export class Task {
 							readonly env: object = {},
 							readonly isLongRunning: boolean = false,
 							readonly description: string = '',
-							readonly dependency?: Task | Tasks,
+							readonly dependsOn?: Task | Tasks,
 							readonly onExit?: Task | Tasks) {
 	}
 }
@@ -39,8 +39,8 @@ export class TaskBuilder {
 	tasksSeries = (name: string, ...tasks: Task[]): Tasks => this.tasks(name, tasks, false);
 
 	task = (name: string, cmd: string, options: CreateTaskOptions = {}): Task => {
-		const {env, isLongRunning, description, dependency, onExit} = options;
-		const t = new Task(`${this.namespace.length ? `${this.namespace}:` : ''}${name}`, cmd, this.cwd, env, isLongRunning, description, dependency, onExit);
+		const {env, isLongRunning, description, dependsOn, onExit} = options;
+		const t = new Task(`${this.namespace.length ? `${this.namespace}:` : ''}${name}`, cmd, this.cwd, env, isLongRunning, description, dependsOn, onExit);
 
 		this.registerTask(t);
 

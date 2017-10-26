@@ -52,7 +52,7 @@ const logFailureAndExit = (e: TaskFailure) => {
 };
 
 Builder.launch({
-	cwd: process.cwd()
+	cwd: argv.cwd
 }, (env: any) => {
 	const taskName = argv._[0];
 
@@ -158,8 +158,8 @@ Builder.launch({
 			currentDepth = currentDepth
 				.map((currentDepthTask): (Task | Tasks | undefined)[] =>
 					currentDepthTask instanceof ModuleTask
-						? [currentDepthTask.dependency]
-						: currentDepthTask.tasks.map((tasksTask: Task | Tasks) => tasksTask instanceof ModuleTask ? tasksTask.dependency : tasksTask)
+						? [currentDepthTask.dependsOn]
+						: currentDepthTask.tasks.map((tasksTask: Task | Tasks) => tasksTask instanceof ModuleTask ? tasksTask.dependsOn : tasksTask)
 				)
 				.reduce(
 					(acc: (Task | Tasks | undefined)[], tasks: (Task | Tasks | undefined)[]) => acc.concat(tasks),
