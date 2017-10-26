@@ -33,84 +33,6 @@ type TaskFailure = { name: string };
 const runningTasks: Set<ChildProcess> = new Set();
 const promiseSeries = (promises: (() => Promise<any>)[]) => promises.reduce((current, next) => current.then(next), Promise.resolve(undefined));
 
-const runTask = (task: Task): Promise<void> => {
-	const taskLogger = createTaskLogger(task.name);
-
-	taskLogger('started');
-
-	return new Promise<void>((resolve, reject) => {
-		const start = Date.now();
-		const nodeModulesBinPath = join(task.cwd, 'node_modules/.bin');
-		const envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
-			.filter(p => !!p)
-			.join(delimiter);
-
-		const childProcess = execFile(
-			sh,
-			[shFlag, task.cmd],
-			{
-				cwd: task.cwd,
-				env: {...task.env, ...process.env, [PATH]: envPath}
-			},
-			(error: Error, stdout: string, stderr: string) => {
-				const didFail = !!error;
-
-				taskLogger('output');
-				logger.info((stderr.length ? stderr : stdout).trim());
-				taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
-
-				if (!task.isLongRunning) {
-					didFail ? reject({name: task.name}) : resolve();
-				}
-
-				runningTasks.delete(childProcess);
-			});
-
-		runningTasks.add(childProcess);
-
-		if (task.isLongRunning) {
-			setImmediate(() => resolve());
-		}
-	})
-		.then(() => task.onExit ? runTaskOrTasks(task.onExit) : undefined);
-};
-
-const runTasks = (tasks: Tasks): Promise<void> =>
-	tasks.isParallel
-		? Promise.all(tasks.tasks.map(runTask)).then(() => undefined)
-		: promiseSeries(tasks.tasks.map(task => () => runTask(task)));
-
-const runTaskOrTasks = (t: Task | Tasks) => t instanceof Task ? runTask(t) : runTasks(t);
-
-const killAllTasks = () => {
-	runningTasks.forEach((cp: ChildProcess) => {
-		treeKill(cp.pid);
-	});
-};
-
-const createTaskExecutionStages = (t: Task | Tasks): (() => Promise<void[]>)[] => {
-	const stages: (Task | Tasks)[][] = [];
-	let currentDepth: (Task | Tasks)[] = [t];
-
-	while (currentDepth.length > 0) {
-		stages.unshift(currentDepth);
-
-		currentDepth = currentDepth
-			.map((currentDepthTask): (Task | Tasks | undefined)[] =>
-				currentDepthTask instanceof Task
-					? [currentDepthTask.dependency]
-					: currentDepthTask.tasks.map((tasksTask: Task | Tasks) => tasksTask instanceof Task ? tasksTask.dependency : tasksTask)
-			)
-			.reduce(
-				(acc: (Task | Tasks | undefined)[], tasks: (Task | Tasks | undefined)[]) => acc.concat(tasks),
-				[]
-			)
-			.filter((item?: (Task | Tasks)): item is (Task | Tasks) => item !== undefined);
-	}
-
-	return stages.map(tasks => (): Promise<void[]> => Promise.all(tasks.map(runTaskOrTasks)));
-};
-
 const listTasks = (registeredTasks: TasksMap) => {
 	logger.log('Tasks');
 	registeredTasks.forEach((v, k) => {
@@ -142,7 +64,8 @@ Builder.launch({
 	}
 
 	require(env.configPath);
-	const registeredTasks: TasksMap = require(env.modulePath).registeredTasks;
+	type ModuleTaskType = new () => Task;
+	const {registeredTasks, Task: ModuleTask}: { registeredTasks: TasksMap, Task: ModuleTaskType } = require(env.modulePath);
 
 	if (!taskName) {
 		return listTasks(registeredTasks);
@@ -156,6 +79,86 @@ Builder.launch({
 		return;
 	}
 
+	const runTask = (task: Task): Promise<void> => {
+		const taskLogger = createTaskLogger(task.name);
+
+		taskLogger('started');
+
+		return new Promise<void>((resolve, reject) => {
+			const start = Date.now();
+			const nodeModulesBinPath = join(task.cwd, 'node_modules/.bin');
+			const envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
+				.filter(p => !!p)
+				.join(delimiter);
+
+			const childProcess = execFile(
+				sh,
+				[shFlag, task.cmd],
+				{
+					cwd: task.cwd,
+					env: {...task.env, ...process.env, [PATH]: envPath}
+				},
+				(error: Error, stdout: string, stderr: string) => {
+					const didFail = !!error;
+
+					taskLogger('output');
+					logger.info((stderr.length ? stderr : stdout).trim());
+					taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
+
+					if (!task.isLongRunning) {
+						didFail ? reject({name: task.name}) : resolve();
+					}
+
+					runningTasks.delete(childProcess);
+				});
+
+			runningTasks.add(childProcess);
+
+			if (task.isLongRunning) {
+				setImmediate(() => resolve());
+			}
+		})
+			.then(() => task.onExit ? runTaskOrTasks(task.onExit) : undefined);
+	};
+
+	const runTasks = (tasks: Tasks): Promise<void> =>
+		tasks.isParallel
+			? Promise.all(tasks.tasks.map(runTask)).then(() => undefined)
+			: promiseSeries(tasks.tasks.map(task => () => runTask(task)));
+
+	const runTaskOrTasks = (t: Task | Tasks) => t instanceof ModuleTask ? runTask(t) : runTasks(t);
+
+	const killAllTasks = () => {
+		runningTasks.forEach((cp: ChildProcess) => {
+			treeKill(cp.pid);
+		});
+	};
+
+	const createTaskExecutionStages = (t: Task | Tasks): (() => Promise<void[]>)[] => {
+		const stages: (Task | Tasks)[][] = [];
+		let currentDepth: (Task | Tasks)[] = [t];
+
+		while (currentDepth.length > 0) {
+			stages.unshift(currentDepth);
+
+			currentDepth = currentDepth
+				.map((currentDepthTask): (Task | Tasks | undefined)[] =>
+					currentDepthTask instanceof ModuleTask
+						? [currentDepthTask.dependency]
+						: currentDepthTask.tasks.map((tasksTask: Task | Tasks) => tasksTask instanceof ModuleTask ? tasksTask.dependency : tasksTask)
+				)
+				.reduce(
+					(acc: (Task | Tasks | undefined)[], tasks: (Task | Tasks | undefined)[]) => acc.concat(tasks),
+					[]
+				)
+				.filter((item?: (Task | Tasks)): item is (Task | Tasks) => item !== undefined);
+		}
+
+		return stages.map(tasks => (): Promise<void[]> => Promise.all(tasks.map(runTaskOrTasks)));
+	};
+
+	process.on('SIGINT', killAllTasks);
+
 	promiseSeries(createTaskExecutionStages(task))
 		.then(
 			() => {
@@ -167,5 +170,3 @@ Builder.launch({
 			}
 		);
 });
-
-process.on('SIGINT', killAllTasks);

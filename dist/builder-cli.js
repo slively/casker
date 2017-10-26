@@ -9,7 +9,6 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var builder_1 = require("./builder");
 var child_process_1 = require("child_process");
 var treeKill = require("tree-kill");
 var path_1 = require("path");
@@ -35,63 +34,6 @@ if (process.platform === 'win32') {
 }
 var runningTasks = new Set();
 var promiseSeries = function (promises) { return promises.reduce(function (current, next) { return current.then(next); }, Promise.resolve(undefined)); };
-var runTask = function (task) {
-    var taskLogger = logger_1.createTaskLogger(task.name);
-    taskLogger('started');
-    return new Promise(function (resolve, reject) {
-        var start = Date.now();
-        var nodeModulesBinPath = path_1.join(task.cwd, 'node_modules/.bin');
-        var envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
-            .filter(function (p) { return !!p; })
-            .join(path_1.delimiter);
-        var childProcess = child_process_1.execFile(sh, [shFlag, task.cmd], {
-            cwd: task.cwd,
-            env: __assign({}, task.env, process.env, (_a = {}, _a[PATH] = envPath, _a))
-        }, function (error, stdout, stderr) {
-            var didFail = !!error;
-            taskLogger('output');
-            logger_1.logger.info((stderr.length ? stderr : stdout).trim());
-            taskLogger("finished (" + (Date.now() - start) / 1000 + "s)");
-            if (!task.isLongRunning) {
-                didFail ? reject({ name: task.name }) : resolve();
-            }
-            runningTasks.delete(childProcess);
-        });
-        runningTasks.add(childProcess);
-        if (task.isLongRunning) {
-            setImmediate(function () { return resolve(); });
-        }
-        var _a;
-    })
-        .then(function () { return task.onExit ? runTaskOrTasks(task.onExit) : undefined; });
-};
-var runTasks = function (tasks) {
-    return tasks.isParallel
-        ? Promise.all(tasks.tasks.map(runTask)).then(function () { return undefined; })
-        : promiseSeries(tasks.tasks.map(function (task) { return function () { return runTask(task); }; }));
-};
-var runTaskOrTasks = function (t) { return t instanceof builder_1.Task ? runTask(t) : runTasks(t); };
-var killAllTasks = function () {
-    runningTasks.forEach(function (cp) {
-        treeKill(cp.pid);
-    });
-};
-var createTaskExecutionStages = function (t) {
-    var stages = [];
-    var currentDepth = [t];
-    while (currentDepth.length > 0) {
-        stages.unshift(currentDepth);
-        currentDepth = currentDepth
-            .map(function (currentDepthTask) {
-            return currentDepthTask instanceof builder_1.Task
-                ? [currentDepthTask.dependency]
-                : currentDepthTask.tasks.map(function (tasksTask) { return tasksTask instanceof builder_1.Task ? tasksTask.dependency : tasksTask; });
-        })
-            .reduce(function (acc, tasks) { return acc.concat(tasks); }, [])
-            .filter(function (item) { return item !== undefined; });
-    }
-    return stages.map(function (tasks) { return function () { return Promise.all(tasks.map(runTaskOrTasks)); }; });
-};
 var listTasks = function (registeredTasks) {
     logger_1.logger.log('Tasks');
     registeredTasks.forEach(function (v, k) {
@@ -117,7 +59,7 @@ Builder.launch({
         logger_1.logger.warn("Global version " + packageJson.version + " is different from local version " + env.modulePackage.version + ".");
     }
     require(env.configPath);
-    var registeredTasks = require(env.modulePath).registeredTasks;
+    var _a = require(env.modulePath), registeredTasks = _a.registeredTasks, ModuleTask = _a.Task;
     if (!taskName) {
         return listTasks(registeredTasks);
     }
@@ -127,6 +69,64 @@ Builder.launch({
         process.exit(1);
         return;
     }
+    var runTask = function (task) {
+        var taskLogger = logger_1.createTaskLogger(task.name);
+        taskLogger('started');
+        return new Promise(function (resolve, reject) {
+            var start = Date.now();
+            var nodeModulesBinPath = path_1.join(task.cwd, 'node_modules/.bin');
+            var envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
+                .filter(function (p) { return !!p; })
+                .join(path_1.delimiter);
+            var childProcess = child_process_1.execFile(sh, [shFlag, task.cmd], {
+                cwd: task.cwd,
+                env: __assign({}, task.env, process.env, (_a = {}, _a[PATH] = envPath, _a))
+            }, function (error, stdout, stderr) {
+                var didFail = !!error;
+                taskLogger('output');
+                logger_1.logger.info((stderr.length ? stderr : stdout).trim());
+                taskLogger("finished (" + (Date.now() - start) / 1000 + "s)");
+                if (!task.isLongRunning) {
+                    didFail ? reject({ name: task.name }) : resolve();
+                }
+                runningTasks.delete(childProcess);
+            });
+            runningTasks.add(childProcess);
+            if (task.isLongRunning) {
+                setImmediate(function () { return resolve(); });
+            }
+            var _a;
+        })
+            .then(function () { return task.onExit ? runTaskOrTasks(task.onExit) : undefined; });
+    };
+    var runTasks = function (tasks) {
+        return tasks.isParallel
+            ? Promise.all(tasks.tasks.map(runTask)).then(function () { return undefined; })
+            : promiseSeries(tasks.tasks.map(function (task) { return function () { return runTask(task); }; }));
+    };
+    var runTaskOrTasks = function (t) { return t instanceof ModuleTask ? runTask(t) : runTasks(t); };
+    var killAllTasks = function () {
+        runningTasks.forEach(function (cp) {
+            treeKill(cp.pid);
+        });
+    };
+    var createTaskExecutionStages = function (t) {
+        var stages = [];
+        var currentDepth = [t];
+        while (currentDepth.length > 0) {
+            stages.unshift(currentDepth);
+            currentDepth = currentDepth
+                .map(function (currentDepthTask) {
+                return currentDepthTask instanceof ModuleTask
+                    ? [currentDepthTask.dependency]
+                    : currentDepthTask.tasks.map(function (tasksTask) { return tasksTask instanceof ModuleTask ? tasksTask.dependency : tasksTask; });
+            })
+                .reduce(function (acc, tasks) { return acc.concat(tasks); }, [])
+                .filter(function (item) { return item !== undefined; });
+        }
+        return stages.map(function (tasks) { return function () { return Promise.all(tasks.map(runTaskOrTasks)); }; });
+    };
+    process.on('SIGINT', killAllTasks);
     promiseSeries(createTaskExecutionStages(task))
         .then(function () {
         killAllTasks();
@@ -135,5 +135,4 @@ Builder.launch({
         process.exit(1);
     });
 });
-process.on('SIGINT', killAllTasks);
 //# sourceMappingURL=builder-cli.js.map
