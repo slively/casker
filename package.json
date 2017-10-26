@@ -10,8 +10,8 @@
 	"scripts": {
 		"compile": "rm -rf ./dist && tsc",
 		"test": "jest --forceExit --config=jest.config.json --coverage",
-		"build": "yarn compile && yarn test",
-		"prepare": "yarn build"
+		"build": "npm run compile && npm run test",
+		"prepare": "npm run compile"
 	},
 	"dependencies": {
 		"interpret": "~1.0.4",
