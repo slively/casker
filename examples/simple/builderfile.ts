@@ -1,4 +1,4 @@
-import {builder} from '../../builder';
+import {builder} from '../../dist/builder';
 
 const {task, tasksParallel, tasksSeries} = builder({cwd: __dirname});
 

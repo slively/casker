@@ -1,4 +1,5 @@
-export declare const registeredTasks: Map<string, Task | Tasks>;
+export declare type TasksMap = Map<string, Task | Tasks>;
+export declare const registeredTasks: TasksMap;
 export declare type CreateTaskOptions = {
     env?: object;
     isLongRunning?: boolean;

@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var logger_1 = require("./logger");
 exports.registeredTasks = new Map();
-var Task = /** @class */ (function () {
+var Task = (function () {
     function Task(name, cmd, cwd, env, isLongRunning, description, dependency, onExit) {
         if (env === void 0) { env = {}; }
         if (isLongRunning === void 0) { isLongRunning = false; }
@@ -19,7 +19,7 @@ var Task = /** @class */ (function () {
     return Task;
 }());
 exports.Task = Task;
-var Tasks = /** @class */ (function () {
+var Tasks = (function () {
     function Tasks(name, description, tasks, isParallel) {
         if (description === void 0) { description = ''; }
         if (tasks === void 0) { tasks = []; }
@@ -32,7 +32,7 @@ var Tasks = /** @class */ (function () {
     return Tasks;
 }());
 exports.Tasks = Tasks;
-var TaskBuilder = /** @class */ (function () {
+var TaskBuilder = (function () {
     function TaskBuilder(namespace, cwd) {
         if (namespace === void 0) { namespace = ''; }
         if (cwd === void 0) { cwd = process.cwd(); }

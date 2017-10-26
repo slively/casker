@@ -1,6 +1,7 @@
 import {logger} from './logger';
 
-export const registeredTasks: Map<string, Task | Tasks> = new Map<string, Task | Tasks>();
+export type TasksMap = Map<string, Task | Tasks>;
+export const registeredTasks: TasksMap = new Map<string, Task | Tasks>();
 
 export type CreateTaskOptions = {
 	env?: object;

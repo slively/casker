@@ -14,14 +14,15 @@ var child_process_1 = require("child_process");
 var treeKill = require("tree-kill");
 var path_1 = require("path");
 var logger_1 = require("./logger");
+var packageJson = require('../package.json');
 var Liftoff = require('liftoff');
+var argv = require('minimist')(process.argv.slice(2));
 var PATH = 'PATH';
 var sh = 'sh';
 var shFlag = '-c';
 if (process.platform === 'win32') {
     sh = process.env.comspec || 'cmd';
     shFlag = '/d /s /c';
-    //conf.windowsVerbatimArguments = true
 }
 // windows calls it's path 'Path' usually, but this is not guaranteed.
 if (process.platform === 'win32') {
@@ -43,7 +44,6 @@ var runTask = function (task) {
         var envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
             .filter(function (p) { return !!p; })
             .join(path_1.delimiter);
-        console.log(envPath);
         var childProcess = child_process_1.execFile(sh, [shFlag, task.cmd], {
             cwd: task.cwd,
             env: __assign({}, task.env, process.env, (_a = {}, _a[PATH] = envPath, _a))
@@ -76,10 +76,6 @@ var killAllTasks = function () {
         treeKill(cp.pid);
     });
 };
-var Builder = new Liftoff({
-    name: 'builder',
-    extensions: require('interpret').jsVariants
-});
 var createTaskExecutionStages = function (t) {
     var stages = [];
     var currentDepth = [t];
@@ -96,20 +92,36 @@ var createTaskExecutionStages = function (t) {
     }
     return stages.map(function (tasks) { return function () { return Promise.all(tasks.map(runTaskOrTasks)); }; });
 };
-/*
-const listTasks = () => {
-    logger('Tasks');
-    registeredTasks.forEach((v, k) => {
-        logger(`${k}: ${v.description}`)
+var listTasks = function (registeredTasks) {
+    logger_1.logger.log('Tasks');
+    registeredTasks.forEach(function (v, k) {
+        logger_1.logger.log(k + ": " + v.description);
     });
-    logger('');
-};*/
-Builder.launch({}, function () {
-    var taskName = process.argv[process.argv.length - 1];
-    // TODO: list all tasks with description if no task given
-    require(path_1.join(process.cwd(), 'builder.ts'));
-    // listTasks();
-    var task = builder_1.registeredTasks.get(taskName);
+    logger_1.logger.log('');
+};
+var Builder = new Liftoff({
+    name: 'builder',
+    extensions: require('interpret').jsVariants
+});
+Builder.launch({
+    cwd: process.cwd()
+}, function (env) {
+    var taskName = argv._[0];
+    if (!env.configPath) {
+        return logger_1.logger.error('No builderfile found.');
+    }
+    if (!env.modulePath) {
+        return logger_1.logger.error('Builder is not installed locally.');
+    }
+    if (packageJson.version !== env.modulePackage.version) {
+        logger_1.logger.warn("Global version " + packageJson.version + " is different from local version " + env.modulePackage.version + ".");
+    }
+    require(env.configPath);
+    var registeredTasks = require(env.modulePath).registeredTasks;
+    if (!taskName) {
+        return listTasks(registeredTasks);
+    }
+    var task = registeredTasks.get(taskName);
     if (task === undefined) {
         logger_1.logger.error("Could not find task '" + taskName + "'.");
         process.exit(1);

@@ -3,16 +3,19 @@
 	"version": "0.0.1",
 	"license": "MIT",
 	"types": "./dist/builder.d.ts",
+	"main": "./dist/builder.js",
 	"bin": {
 		"builder": "./dist/builder-cli.js"
 	},
 	"scripts": {
-		"build": "rm -rf ./dist && tsc",
-		"test": "jest --forceExit --config=jest.config.json --coverage"
+		"compile": "rm -rf ./dist && tsc",
+		"test": "jest --forceExit --config=jest.config.json --coverage",
+		"build": "yarn compile && yarn test"
 	},
 	"dependencies": {
 		"interpret": "~1.0.4",
 		"liftoff": "~2.3.0",
+		"minimist": "^1.2.0",
 		"supports-color": "~4.4.0",
 		"tree-kill": "~1.2.0",
 		"ts-node": "~3.3.0",

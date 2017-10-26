@@ -1,4 +1,4 @@
-import {builder, Task} from '../../../builder';
+import {builder, Task} from '../../../dist/builder';
 
 const {task} = builder({namespace: 'project-b', cwd: __dirname});
 

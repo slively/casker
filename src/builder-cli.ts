@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-import {Task, Tasks, registeredTasks} from './builder';
+import {Task, Tasks, TasksMap} from './builder';
 import {ChildProcess, execFile} from 'child_process';
 import * as treeKill from 'tree-kill';
 import {join, delimiter} from 'path';
 import {logger, createTaskLogger} from './logger';
-const Liftoff = require('liftoff');
+
+const packageJson: { [key: string]: string } = require('../package.json');
+const Liftoff: any = require('liftoff');
+const argv: { _: string[], [key: string]: any } = require('minimist')(process.argv.slice(2));
 
 let PATH = 'PATH';
 let sh = 'sh';
@@ -13,7 +16,6 @@ let shFlag = '-c';
 if (process.platform === 'win32') {
 	sh = process.env.comspec || 'cmd';
 	shFlag = '/d /s /c';
-	//conf.windowsVerbatimArguments = true
 }
 
 // windows calls it's path 'Path' usually, but this is not guaranteed.
@@ -42,14 +44,13 @@ const runTask = (task: Task): Promise<void> => {
 		const envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
 			.filter(p => !!p)
 			.join(delimiter);
-		console.log(envPath);
 
 		const childProcess = execFile(
 			sh,
 			[shFlag, task.cmd],
 			{
 				cwd: task.cwd,
-				env: {...task.env, ...process.env, [PATH]: envPath }
+				env: {...task.env, ...process.env, [PATH]: envPath}
 			},
 			(error: Error, stdout: string, stderr: string) => {
 				const didFail = !!error;
@@ -87,11 +88,6 @@ const killAllTasks = () => {
 	});
 };
 
-const Builder = new Liftoff({
-	name: 'builder',
-	extensions: require('interpret').jsVariants
-});
-
 const createTaskExecutionStages = (t: Task | Tasks): (() => Promise<void[]>)[] => {
 	const stages: (Task | Tasks)[][] = [];
 	let currentDepth: (Task | Tasks)[] = [t];
@@ -115,22 +111,42 @@ const createTaskExecutionStages = (t: Task | Tasks): (() => Promise<void[]>)[] =
 	return stages.map(tasks => (): Promise<void[]> => Promise.all(tasks.map(runTaskOrTasks)));
 };
 
-/*
-const listTasks = () => {
-	logger('Tasks');
+const listTasks = (registeredTasks: TasksMap) => {
+	logger.log('Tasks');
 	registeredTasks.forEach((v, k) => {
-		logger(`${k}: ${v.description}`)
+		logger.log(`${k}: ${v.description}`)
 	});
-	logger('');
-};*/
+	logger.log('');
+};
 
-Builder.launch({}, () => {
-	const taskName = process.argv[process.argv.length - 1];
+const Builder = new Liftoff({
+	name: 'builder',
+	extensions: require('interpret').jsVariants
+});
 
-	// TODO: list all tasks with description if no task given
-	require(join(process.cwd(), 'builder.ts'));
+Builder.launch({
+	cwd: process.cwd()
+}, (env: any) => {
+	const taskName = argv._[0];
 
-	// listTasks();
+	if (!env.configPath) {
+		return logger.error('No builderfile found.');
+	}
+
+	if (!env.modulePath) {
+		return logger.error('Builder is not installed locally.');
+	}
+
+	if (packageJson.version !== env.modulePackage.version) {
+		logger.warn(`Global version ${packageJson.version} is different from local version ${env.modulePackage.version}.`);
+	}
+
+	require(env.configPath);
+	const registeredTasks: TasksMap = require(env.modulePath).registeredTasks;
+
+	if (!taskName) {
+		return listTasks(registeredTasks);
+	}
 
 	const task = registeredTasks.get(taskName);
 
