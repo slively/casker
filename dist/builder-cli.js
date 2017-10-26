@@ -32,7 +32,7 @@ if (process.platform === 'win32') {
         }
     });
 }
-var runningTasks = new Set();
+var runningTasks = new Map();
 var promiseSeries = function (promises) { return promises.reduce(function (current, next) { return current.then(next); }, Promise.resolve(undefined)); };
 var listTasks = function (registeredTasks) {
     logger_1.logger.log('Tasks');
@@ -45,6 +45,10 @@ var Builder = new Liftoff({
     name: 'builder',
     extensions: require('interpret').jsVariants
 });
+var logFailureAndExit = function (e) {
+    logger_1.logger.error("Task " + e.name + " failed");
+    process.exit(1);
+};
 Builder.launch({
     cwd: process.cwd()
 }, function (env) {
@@ -91,13 +95,13 @@ Builder.launch({
                 }
                 runningTasks.delete(childProcess);
             });
-            runningTasks.add(childProcess);
+            runningTasks.set(childProcess, task);
             if (task.isLongRunning) {
                 setImmediate(function () { return resolve(); });
             }
             var _a;
         })
-            .then(function () { return task.onExit ? runTaskOrTasks(task.onExit) : undefined; });
+            .then(function () { return (task.onExit && !task.isLongRunning) ? runTaskOrTasks(task.onExit) : undefined; });
     };
     var runTasks = function (tasks) {
         return tasks.isParallel
@@ -106,8 +110,13 @@ Builder.launch({
     };
     var runTaskOrTasks = function (t) { return t instanceof ModuleTask ? runTask(t) : runTasks(t); };
     var killAllTasks = function () {
-        runningTasks.forEach(function (cp) {
-            treeKill(cp.pid);
+        runningTasks.forEach(function (task, cp) {
+            treeKill(cp.pid, undefined, function () {
+                if (task.onExit !== undefined) {
+                    runTaskOrTasks(task.onExit)
+                        .then(killAllTasks, logFailureAndExit);
+                }
+            });
         });
     };
     var createTaskExecutionStages = function (t) {
@@ -128,11 +137,6 @@ Builder.launch({
     };
     process.on('SIGINT', killAllTasks);
     promiseSeries(createTaskExecutionStages(task))
-        .then(function () {
-        killAllTasks();
-    }, function (e) {
-        logger_1.logger.error("Task " + e.name + " failed");
-        process.exit(1);
-    });
+        .then(killAllTasks, logFailureAndExit);
 });
 //# sourceMappingURL=builder-cli.js.map

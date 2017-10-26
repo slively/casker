@@ -30,7 +30,7 @@ if (process.platform === 'win32') {
 
 type TaskFailure = { name: string };
 
-const runningTasks: Set<ChildProcess> = new Set();
+const runningTasks: Map<ChildProcess, Task> = new Map();
 const promiseSeries = (promises: (() => Promise<any>)[]) => promises.reduce((current, next) => current.then(next), Promise.resolve(undefined));
 
 const listTasks = (registeredTasks: TasksMap) => {
@@ -45,6 +45,11 @@ const Builder = new Liftoff({
 	name: 'builder',
 	extensions: require('interpret').jsVariants
 });
+
+const logFailureAndExit = (e: TaskFailure) => {
+	logger.error(`Task ${e.name} failed`);
+	process.exit(1);
+};
 
 Builder.launch({
 	cwd: process.cwd()
@@ -112,13 +117,13 @@ Builder.launch({
 					runningTasks.delete(childProcess);
 				});
 
-			runningTasks.add(childProcess);
+			runningTasks.set(childProcess, task);
 
 			if (task.isLongRunning) {
 				setImmediate(() => resolve());
 			}
 		})
-			.then(() => task.onExit ? runTaskOrTasks(task.onExit) : undefined);
+			.then(() => (task.onExit && !task.isLongRunning) ? runTaskOrTasks(task.onExit) : undefined);
 	};
 
 	const runTasks = (tasks: Tasks): Promise<void> =>
@@ -129,8 +134,17 @@ Builder.launch({
 	const runTaskOrTasks = (t: Task | Tasks) => t instanceof ModuleTask ? runTask(t) : runTasks(t);
 
 	const killAllTasks = () => {
-		runningTasks.forEach((cp: ChildProcess) => {
-			treeKill(cp.pid);
+		runningTasks.forEach((task: Task, cp: ChildProcess) => {
+			treeKill(
+				cp.pid,
+				undefined,
+				() => {
+					if (task.onExit !== undefined) {
+						runTaskOrTasks(task.onExit)
+							.then(killAllTasks, logFailureAndExit);
+					}
+				}
+			);
 		});
 	};
 
@@ -160,13 +174,5 @@ Builder.launch({
 	process.on('SIGINT', killAllTasks);
 
 	promiseSeries(createTaskExecutionStages(task))
-		.then(
-			() => {
-				killAllTasks();
-			},
-			(e: TaskFailure) => {
-				logger.error(`Task ${e.name} failed`);
-				process.exit(1);
-			}
-		);
+		.then(killAllTasks, logFailureAndExit);
 });
