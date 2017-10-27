@@ -8,7 +8,7 @@ npm install -g builder
 npm install builder
 ```
 
-builderfile.ts
+### builderfile.ts (or builderfile.js)
 ```javascript
 import {builder} from 'builder';
 
@@ -19,7 +19,7 @@ const lint = task('lint', 'jshint', {dependsOn: install, description: 'Run jshin
 task('test', 'jest', {dependsOn: lint, description: 'Run tests' });
 ```
 
-Tasks are run by name
+### Run a task
 ```
 builder test
 
@@ -37,7 +37,7 @@ test output
 test finished (13.313s)
 ```
 
-List tasks by running without any arguments
+### List tasks by running without any arguments
 ```
 builder
 
@@ -49,6 +49,7 @@ test - Run tests
 
 
 See [examples](examples) for more.
+
 The [task api](src/builder.ts) is fairly simple and is written in Typescript.
 
 ## Features
