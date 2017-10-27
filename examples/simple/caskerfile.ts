@@ -1,6 +1,6 @@
-import {builder} from '../../dist/builder';
+import {casker} from '../../dist/casker';
 
-const {task, tasksParallel, tasksSeries} = builder();
+const {task, tasksParallel, tasksSeries} = casker();
 
 const loop = task('loop', 'ts-node ./loop', {isLongRunning: true, description: 'runs loop'});
 const a = task('a', 'ts-node taskA', {description: 'runs taskA', dependsOn: loop});

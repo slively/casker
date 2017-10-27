@@ -73,7 +73,7 @@ export interface BuilderOptions {
 	cwd?: string;
 }
 
-export const builder = (options: BuilderOptions = {}): TaskBuilder => {
+export const casker = (options: BuilderOptions = {}): TaskBuilder => {
 	const {namespace , cwd} = options;
 
 	return new TaskBuilder(namespace, cwd)

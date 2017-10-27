@@ -3,7 +3,7 @@ import {exec} from 'child_process';
 export const createExampleProjectTaskRunner = (projectName: string) => (taskName: string) =>
 	new Promise<string>(((resolve, reject) =>
 			exec(
-				`node dist/builder-cli.js ${taskName} --cwd ./examples/${projectName}`,
+				`node dist/casker-cli.js ${taskName} --cwd ./examples/${projectName}`,
 				(err, stdout, stderr) => err ? reject(err) : resolve(stdout)
 			)
 	));

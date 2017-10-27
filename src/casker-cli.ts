@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {Task, Tasks, TasksMap} from './builder';
+import {Task, Tasks, TasksMap} from './casker';
 import {ChildProcess, execFile} from 'child_process';
 import * as treeKill from 'tree-kill';
 import {join, delimiter} from 'path';
@@ -42,7 +42,7 @@ const listTasks = (registeredTasks: TasksMap) => {
 };
 
 const Builder = new Liftoff({
-	name: 'builder',
+	name: 'casker',
 	extensions: require('interpret').jsVariants
 });
 
@@ -62,7 +62,7 @@ Builder.launch({
 	const taskName = argv._[0];
 
 	if (!env.configPath) {
-		return logger.error('No builderfile found.');
+		return logger.error('No caskerfile found.');
 	}
 
 	if (!env.modulePath) {

@@ -1,18 +1,18 @@
-# builder
+# Casker
 
 A task runner modeled after npm scripts, but with a task dependency graph and easy parallel/serial execution.
 
 ```
 // instal locally in project, then global cli will use local version
-npm install -g builder
-npm install builder
+npm install -g casker
+npm install casker
 ```
 
-### builderfile.ts (or builderfile.js)
+### caskerfile.ts (or caskerfile.js)
 ```javascript
-import {builder} from 'builder';
+import {casker} from 'casker';
 
-const {task} = builder();
+const {task} = casker();
 
 const install = task('install', 'npm install', { description: 'Install dependencies' });
 const lint = task('lint', 'jshint', {dependsOn: install, description: 'Run jshint' });
@@ -21,7 +21,7 @@ task('test', 'jest', {dependsOn: lint, description: 'Run tests' });
 
 ### Run a task
 ```
-builder test
+casker test
 
 install started
 install output
@@ -39,7 +39,7 @@ test finished (13.313s)
 
 ### List tasks by running without any arguments
 ```
-builder
+casker
 
 Tasks
 install - Install dependencies
@@ -50,7 +50,7 @@ test - Run tests
 
 See [examples](examples) for more.
 
-The [task api](src/builder.ts) is fairly simple and is written in Typescript.
+The [task api](src/casker.ts) is fairly simple and is written in Typescript.
 
 ## Features
 
