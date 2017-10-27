@@ -11,7 +11,7 @@
   "scripts": {
     "compile": "rm -rf ./dist && tsc",
     "test": "jest --forceExit --config=jest.config.json --coverage",
-    "build": "npm run compile && npm run test",
+    "build": "rm -rf ./build && npm run compile && npm run test",
     "prepare": "npm run build"
   },
   "dependencies": {
