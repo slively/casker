@@ -8,6 +8,7 @@ npm install -g builder
 npm install builder
 ```
 
+builderfile.ts
 ```javascript
 import {builder} from 'builder';
 
