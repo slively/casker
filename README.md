@@ -1,6 +1,6 @@
 # builder
 
-A task runner modeled after npm scripts
+A task runner modeled after npm scripts, but with a task dependency graph and easy parallel/serial execution.
 
 ## Features
 
@@ -10,5 +10,5 @@ A task runner modeled after npm scripts
 - Run tasks in series or parallel
 - Multi-Project support
 - Typescript support
-- API for verifying if task should run
+- API for verifying if a task should run
   - Comes wih file/directory change detection 
