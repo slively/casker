@@ -4,13 +4,13 @@
 		"js"
 	],
 	"transform": {
-		"^.+\\.(ts|tsx)$": "./node_modules/ts-jest/preprocessor.js"
+		"^.+\\.ts$": "./node_modules/ts-jest/preprocessor.js"
 	},
 	"testMatch": [
-		"**/__tests__/**/*.test.(ts|js)"
+		"<rootDir>/tests/**/*.test.ts"
 	],
-	"modulePaths": ["<rootDir>/src"],
+	"modulePaths": ["<rootDir>"],
 	"testEnvironment": "node",
-	"coverageDirectory": "./build/jest/coverage",
-	"cacheDirectory": "./build/jest/cache"
+	"coverageDirectory": "<rootDir>/build/jest/coverage",
+	"cacheDirectory": "<rootDir>/build/jest/cache"
 }
