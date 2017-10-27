@@ -36,7 +36,7 @@ const promiseSeries = (promises: (() => Promise<any>)[]) => promises.reduce((cur
 const listTasks = (registeredTasks: TasksMap) => {
 	logger.log('Tasks');
 	registeredTasks.forEach((v, k) => {
-		logger.log(`${k}: ${v.description}`)
+		logger.log(`${k} ${v.description ? '-' + v.description : ''}`)
 	});
 	logger.log('');
 };
@@ -50,6 +50,11 @@ const logFailureAndExit = (e: TaskFailure) => {
 	logger.error(`Task ${e.name} failed`);
 	process.exit(1);
 };
+
+
+if (argv.cwd) {
+	process.chdir(argv.cwd);
+}
 
 Builder.launch({
 	cwd: argv.cwd

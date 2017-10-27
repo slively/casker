@@ -78,8 +78,9 @@ var TaskBuilder = (function () {
     return TaskBuilder;
 }());
 exports.TaskBuilder = TaskBuilder;
-exports.builder = function (_a) {
-    var namespace = _a.namespace, cwd = _a.cwd;
+exports.builder = function (options) {
+    if (options === void 0) { options = {}; }
+    var namespace = options.namespace, cwd = options.cwd;
     return new TaskBuilder(namespace, cwd);
 };
 //# sourceMappingURL=builder.js.map

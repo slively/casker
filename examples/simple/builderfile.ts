@@ -1,6 +1,6 @@
 import {builder} from '../../dist/builder';
 
-const {task, tasksParallel, tasksSeries} = builder({cwd: __dirname});
+const {task, tasksParallel, tasksSeries} = builder();
 
 const loop = task('loop', 'ts-node ./loop', {isLongRunning: true, description: 'runs loop'});
 const a = task('a', 'ts-node taskA', {description: 'runs taskA', dependsOn: loop});

@@ -37,7 +37,7 @@ var promiseSeries = function (promises) { return promises.reduce(function (curre
 var listTasks = function (registeredTasks) {
     logger_1.logger.log('Tasks');
     registeredTasks.forEach(function (v, k) {
-        logger_1.logger.log(k + ": " + v.description);
+        logger_1.logger.log(k + " " + (v.description ? '-' + v.description : ''));
     });
     logger_1.logger.log('');
 };
@@ -49,6 +49,9 @@ var logFailureAndExit = function (e) {
     logger_1.logger.error("Task " + e.name + " failed");
     process.exit(1);
 };
+if (argv.cwd) {
+    process.chdir(argv.cwd);
+}
 Builder.launch({
     cwd: argv.cwd
 }, function (env) {

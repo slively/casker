@@ -70,7 +70,11 @@ export class TaskBuilder {
 
 export interface BuilderOptions {
 	namespace?: string;
-	cwd: string;
+	cwd?: string;
 }
 
-export const builder = ({namespace , cwd}: BuilderOptions): TaskBuilder => new TaskBuilder(namespace, cwd);
+export const builder = (options: BuilderOptions = {}): TaskBuilder => {
+	const {namespace , cwd} = options;
+
+	return new TaskBuilder(namespace, cwd)
+};

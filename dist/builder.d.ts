@@ -37,6 +37,6 @@ export declare class TaskBuilder {
 }
 export interface BuilderOptions {
     namespace?: string;
-    cwd: string;
+    cwd?: string;
 }
-export declare const builder: ({namespace, cwd}: BuilderOptions) => TaskBuilder;
+export declare const builder: (options?: BuilderOptions) => TaskBuilder;

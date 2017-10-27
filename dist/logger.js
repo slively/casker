@@ -20,7 +20,7 @@ exports.logger = console;
 exports.createTaskLogger = function (name) {
     currentColorIndex = currentColorIndex === colors.length - 1 ? 0 : currentColorIndex + 1;
     var color = colors[currentColorIndex];
-    var format = "\u001B[3" + (color < 8 ? color : '8;5;' + color) + ";1m%s: %s\u001B[0m";
+    var format = "\u001B[3" + (color < 8 ? color : '8;5;' + color) + ";1m%s %s\u001B[0m";
     return function (msg) { return console.log(format, name, msg); };
 };
 //# sourceMappingURL=logger.js.map

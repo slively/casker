@@ -21,7 +21,7 @@ export const logger = console;
 export const createTaskLogger = (name: string) => {
 	currentColorIndex = currentColorIndex === colors.length - 1 ? 0 : currentColorIndex + 1;
 	const color = colors[currentColorIndex];
-	const format = `\u001b[3${color < 8 ? color : '8;5;' + color};1m%s: %s\u001b[0m`;
+	const format = `\u001b[3${color < 8 ? color : '8;5;' + color};1m%s %s\u001b[0m`;
 
 	return (msg: string) => console.log(format, name, msg);
 };
