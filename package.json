@@ -1,34 +1,34 @@
 {
-	"name": "casker",
-	"version": "0.0.1",
-	"license": "MIT",
-	"repository": "https://github.com/slively/casker",
-	"types": "./dist/casker.d.ts",
-	"main": "./dist/casker.js",
-	"bin": {
-		"casker": "./dist/casker-cli.js"
-	},
-	"scripts": {
-		"compile": "rm -rf ./dist && tsc",
-		"test": "jest --forceExit --config=jest.config.json --coverage",
-		"build": "npm run compile && npm run test",
-		"prepublish": "npm build"
-	},
-	"dependencies": {
-		"interpret": "1.0.4",
-		"liftoff": "2.3.0",
-		"minimist": "1.2.0",
-		"supports-color": "4.4.0",
-		"tree-kill": "1.2.0",
-		"ts-node": "3.3.0",
-		"typescript": "2.4.2"
-	},
-	"devDependencies": {
-		"@types/debug": "~0.0.30",
-		"@types/jest": "~19.2.2",
-		"@types/node": "~7.0.12",
-		"@types/supports-color": "~3.1.0",
-		"jest": "~19.0.2",
-		"ts-jest": "~19.0.8"
-	}
+  "name": "casker",
+  "version": "0.0.2",
+  "license": "MIT",
+  "repository": "https://github.com/slively/casker",
+  "types": "./dist/casker.d.ts",
+  "main": "./dist/casker.js",
+  "bin": {
+    "casker": "./dist/casker-cli.js"
+  },
+  "scripts": {
+    "compile": "rm -rf ./dist && tsc",
+    "test": "jest --forceExit --config=jest.config.json --coverage",
+    "build": "npm run compile && npm run test",
+    "prepublish": "npm build"
+  },
+  "dependencies": {
+    "interpret": "1.0.4",
+    "liftoff": "2.3.0",
+    "minimist": "1.2.0",
+    "supports-color": "4.4.0",
+    "tree-kill": "1.2.0",
+    "ts-node": "3.3.0",
+    "typescript": "2.4.2"
+  },
+  "devDependencies": {
+    "@types/debug": "~0.0.30",
+    "@types/jest": "~19.2.2",
+    "@types/node": "~7.0.12",
+    "@types/supports-color": "~3.1.0",
+    "jest": "~19.0.2",
+    "ts-jest": "~19.0.8"
+  }
 }
