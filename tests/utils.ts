@@ -11,7 +11,7 @@ export const createExampleProjectTaskRunner = (projectName: string) => (taskName
 type LogVerifier = (logs: string, currentIndex: number) => number;
 type ComposableLogVerifier = (...args: string[]) => LogVerifier;
 
-const logError = (log: string, logs: string) => {
+const throwError = (log: string, logs: string) => {
 	throw new Error(`${logs}\nLog not found in correct place: ${log}`);
 };
 
@@ -20,7 +20,7 @@ export const serial: ComposableLogVerifier = (...args: string[]) => (logs: strin
 		const index = logs.indexOf(arg, nextIndex);
 
 		if (index === -1) {
-			logError(arg, logs);
+			throwError(arg, logs);
 		}
 
 		return index;
@@ -29,15 +29,24 @@ export const serial: ComposableLogVerifier = (...args: string[]) => (logs: strin
 
 export const parallel: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
 	let nextIndex = currentIndex;
+	const foundIndexes: number[] = [];
 
 	for (const arg of args) {
-		const index = logs.indexOf(arg);
+		let index = -1;
 
-		if (index === -1) {
-			logError(arg, logs);
-		} else if (index > nextIndex) {
+		while(foundIndexes.indexOf(index) > -1) {
+			index = logs.indexOf(arg, index + 1);
+
+			if (index === -1) {
+				throwError(arg, logs);
+			}
+		}
+
+		if (index > nextIndex) {
 			nextIndex = index;
 		}
+
+		foundIndexes.push(index)
 	}
 
 	return nextIndex;
