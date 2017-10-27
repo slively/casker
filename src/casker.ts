@@ -35,17 +35,21 @@ export class TaskBuilder {
 	constructor(private namespace: string = '', private cwd: string = process.cwd()) {
 	}
 
-	tasksParallel = (name: string, ...tasks: Task[]): Tasks => this.tasks(name, tasks, true);
-	tasksSeries = (name: string, ...tasks: Task[]): Tasks => this.tasks(name, tasks, false);
+	tasksParallel = (name: string, ...tasks: Task[]): Tasks => this.tasks(this.createTaskName(name), tasks, true);
+	tasksSeries = (name: string, ...tasks: Task[]): Tasks => this.tasks(this.createTaskName(name), tasks, false);
 
 	task = (name: string, cmd: string, options: CreateTaskOptions = {}): Task => {
 		const {env, isLongRunning, description, dependsOn, onExit} = options;
-		const t = new Task(`${this.namespace.length ? `${this.namespace}:` : ''}${name}`, cmd, this.cwd, env, isLongRunning, description, dependsOn, onExit);
+		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, isLongRunning, description, dependsOn, onExit);
 
 		this.registerTask(t);
 
 		return t;
 	};
+
+	private createTaskName(name: string) {
+		return `${this.namespace.length ? `${this.namespace}:` : ''}${name}`;
+	}
 
 	private tasks(name: string, tasks: Task[], isParallel: boolean): Tasks {
 		const t = new Tasks(name, undefined, tasks, isParallel);
