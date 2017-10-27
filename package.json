@@ -12,7 +12,7 @@
     "compile": "rm -rf ./dist && tsc",
     "test": "jest --forceExit --config=jest.config.json --coverage",
     "build": "npm run compile && npm run test",
-    "prepublishOnly": "npm run build"
+    "prepare": "npm run build"
   },
   "dependencies": {
     "interpret": "1.0.4",
