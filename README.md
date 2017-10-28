@@ -64,5 +64,6 @@ The [task api](src/casker.ts) is fairly simple and is written in Typescript.
 ## TODO
 
 - Ability to leave tasks running (continuous mode)
+  - with log streaming
 - API for verifying if a task should run (up to date checking)
-  - Comes wih file/directory change detection 
+  - Comes wih file/directory change detection

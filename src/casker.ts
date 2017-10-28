@@ -27,7 +27,7 @@ export class Tasks {
 	constructor(readonly name: string,
 							readonly description: string = '',
 							readonly tasks: Task[] = [],
-							readonly isParallel = true) {
+							readonly isParallel: boolean = true) {
 	}
 }
 

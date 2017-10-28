@@ -2,7 +2,7 @@ import {createExampleProjectTaskRunner, parallel, serial, verifyLogs} from './ut
 
 const runTask = createExampleProjectTaskRunner('multi-project');
 
-describe('simple', () => {
+describe('multi-project', () => {
 
 	it('should run task allSeries', () =>
 		runTask('allSeries')

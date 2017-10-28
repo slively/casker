@@ -10,8 +10,9 @@
   },
   "scripts": {
     "compile": "rm -rf ./dist && tsc",
+    "lint": "tslint -p ./tsconfig.json",
     "test": "jest --forceExit --config=jest.config.json --coverage",
-    "build": "rm -rf ./build && npm run compile && npm run test",
+    "build": "rm -rf ./build && npm run lint && npm run compile && npm run test",
     "prepare": "npm run build"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "@types/node": "~7.0.12",
     "@types/supports-color": "~3.1.0",
     "jest": "~19.0.2",
-    "ts-jest": "~19.0.8"
+    "ts-jest": "~19.0.8",
+    "tslint": "^5.8.0"
   }
 }

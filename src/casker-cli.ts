@@ -51,133 +51,122 @@ const logFailureAndExit = (e: TaskFailure) => {
 	process.exit(1);
 };
 
-
 if (argv.cwd) {
 	process.chdir(argv.cwd);
 }
 
-Builder.launch({
-	cwd: argv.cwd
-}, (env: any) => {
-	const taskName = argv._[0];
+Builder.launch(
+	{
+		cwd: argv.cwd
+	},
+	(env: any) => {
+		const taskName = argv._[0];
 
-	if (!env.configPath) {
-		return logger.error('No caskerfile found.');
-	}
-
-	if (!env.modulePath) {
-		return logger.error('Builder is not installed locally.');
-	}
-
-	if (packageJson.version !== env.modulePackage.version) {
-		logger.warn(`Global version ${packageJson.version} is different from local version ${env.modulePackage.version}.`);
-	}
-
-	require(env.configPath);
-	type ModuleTaskType = new () => Task;
-	const {registeredTasks, Task: ModuleTask}: { registeredTasks: TasksMap, Task: ModuleTaskType } = require(env.modulePath);
-
-	if (!taskName) {
-		return listTasks(registeredTasks);
-	}
-
-	const task = registeredTasks.get(taskName);
-
-	if (task === undefined) {
-		logger.error(`Could not find task '${taskName}'.`);
-		process.exit(1);
-		return;
-	}
-
-	const runTask = (task: Task): Promise<void> => {
-		const taskLogger = createTaskLogger(task.name);
-
-		taskLogger('started');
-
-		return new Promise<void>((resolve, reject) => {
-			const start = Date.now();
-			const nodeModulesBinPath = join(task.cwd, 'node_modules/.bin');
-			const envPath = [task.env[PATH], process.env[PATH], nodeModulesBinPath]
-				.filter(p => !!p)
-				.join(delimiter);
-
-			const childProcess = execFile(
-				sh,
-				[shFlag, task.cmd],
-				{
-					cwd: task.cwd,
-					env: {...task.env, ...process.env, [PATH]: envPath}
-				},
-				(error: Error, stdout: string, stderr: string) => {
-					const didFail = !!error;
-
-					taskLogger('output');
-					logger.info((stderr.length ? stderr : stdout).trim());
-					taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
-
-					if (!task.isLongRunning) {
-						didFail ? reject({name: task.name}) : resolve();
-					}
-
-					runningTasks.delete(childProcess);
-				});
-
-			runningTasks.set(childProcess, task);
-
-			if (task.isLongRunning) {
-				setImmediate(() => resolve());
-			}
-		})
-			.then(() => (task.onExit && !task.isLongRunning) ? runTaskOrTasks(task.onExit) : undefined);
-	};
-
-	const runTasks = (tasks: Tasks): Promise<void> =>
-		tasks.isParallel
-			? Promise.all(tasks.tasks.map(runTask)).then(() => undefined)
-			: promiseSeries(tasks.tasks.map(task => () => runTask(task)));
-
-	const runTaskOrTasks = (t: Task | Tasks) => t instanceof ModuleTask ? runTask(t) : runTasks(t);
-
-	const killAllTasks = () => {
-		runningTasks.forEach((task: Task, cp: ChildProcess) => {
-			treeKill(
-				cp.pid,
-				undefined,
-				() => {
-					if (task.onExit !== undefined) {
-						runTaskOrTasks(task.onExit)
-							.then(killAllTasks, logFailureAndExit);
-					}
-				}
-			);
-		});
-	};
-
-	const createTaskExecutionStages = (t: Task | Tasks): (() => Promise<void[]>)[] => {
-		const stages: (Task | Tasks)[][] = [];
-		let currentDepth: (Task | Tasks)[] = [t];
-
-		while (currentDepth.length > 0) {
-			stages.unshift(currentDepth);
-
-			currentDepth = currentDepth
-				.map((currentDepthTask): (Task | Tasks | undefined)[] =>
-					currentDepthTask instanceof ModuleTask
-						? [currentDepthTask.dependsOn]
-						: currentDepthTask.tasks.map((tasksTask: Task | Tasks) => tasksTask instanceof ModuleTask ? tasksTask.dependsOn : tasksTask)
-				)
-				.reduce(
-					(acc: (Task | Tasks | undefined)[], tasks: (Task | Tasks | undefined)[]) => acc.concat(tasks),
-					[]
-				)
-				.filter((item?: (Task | Tasks)): item is (Task | Tasks) => item !== undefined);
+		if (!env.configPath) {
+			return logger.error('No caskerfile found.');
 		}
 
-		return stages.map(tasks => (): Promise<void[]> => Promise.all(tasks.map(runTaskOrTasks)));
-	};
+		if (!env.modulePath) {
+			return logger.error('Builder is not installed locally.');
+		}
 
-	process.on('SIGINT', killAllTasks);
+		if (packageJson.version !== env.modulePackage.version) {
+			logger.warn(`Global version ${packageJson.version} is different from local version ${env.modulePackage.version}.`);
+		}
 
-	promiseSeries(createTaskExecutionStages(task))
-		.then(killAllTasks, logFailureAndExit);
-});
+		require(env.configPath);
+		type ModuleTaskType = new () => Task;
+		const {registeredTasks, Task: ModuleTask}: { registeredTasks: TasksMap, Task: ModuleTaskType } = require(env.modulePath);
+
+		if (!taskName) {
+			return listTasks(registeredTasks);
+		}
+
+		const task = registeredTasks.get(taskName);
+
+		if (task === undefined) {
+			logger.error(`Could not find task '${taskName}'.`);
+			process.exit(1);
+			return;
+		}
+
+		const runTask = (t: Task): Promise<void> => {
+			const taskLogger = createTaskLogger(t.name);
+
+			taskLogger('started');
+
+			return new Promise<void>((resolve, reject) => {
+				const start = Date.now();
+				const nodeModulesBinPath = join(t.cwd, 'node_modules/.bin');
+				const envPath = [t.env[PATH], process.env[PATH], nodeModulesBinPath]
+					.filter(p => !!p)
+					.join(delimiter);
+
+				const childProcess = execFile(
+					sh,
+					[shFlag, t.cmd],
+					{
+						cwd: t.cwd,
+						env: {...t.env, ...process.env, [PATH]: envPath}
+					},
+					(error: Error, stdout: string, stderr: string) => {
+						const didFail = !!error;
+
+						taskLogger('output');
+						logger.info((stderr.length ? stderr : stdout).trim());
+						taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
+
+						if (!t.isLongRunning) {
+							didFail ? reject({name: t.name}) : resolve();
+						}
+
+						runningTasks.delete(childProcess);
+					});
+
+				runningTasks.set(childProcess, t);
+
+				if (t.isLongRunning) {
+					setImmediate(() => resolve());
+				}
+			})
+				.then(() => (t.onExit && !t.isLongRunning) ? runTaskOrTasks(t.onExit) : undefined);
+		};
+
+		const runTasks = (tasks: Tasks): Promise<void> =>
+			tasks.isParallel
+				? Promise.all(tasks.tasks.map(runTask)).then(() => undefined)
+				: promiseSeries(tasks.tasks.map(t => () => runTask(t)));
+
+		const runTaskOrTasks = (t: Task | Tasks) => t instanceof ModuleTask ? runTask(t) : runTasks(t);
+
+		const runTaskWithDependencies = (t: Task | Tasks): Promise<void> => {
+			if (t instanceof ModuleTask) {
+				return t.dependsOn == null
+					? runTask(t)
+					: runTaskWithDependencies(t.dependsOn).then(() => runTask(t));
+			}
+
+			return t.isParallel
+				? Promise.all(t.tasks.map(t2 => runTaskWithDependencies(t2)))
+				: promiseSeries(t.tasks.map(t2 => () => runTaskWithDependencies(t2)))
+		};
+
+		const killAllTasks = () => {
+			runningTasks.forEach((t: Task, cp: ChildProcess) => {
+				treeKill(
+					cp.pid,
+					undefined,
+					() => {
+						if (t.onExit !== undefined) {
+							runTaskOrTasks(t.onExit)
+								.then(killAllTasks, logFailureAndExit);
+						}
+					}
+				);
+			});
+		};
+
+		process.on('SIGINT', killAllTasks);
+		runTaskWithDependencies(task).then(killAllTasks, logFailureAndExit);
+	}
+);
