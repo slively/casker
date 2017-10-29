@@ -7,5 +7,9 @@ const b = task('b', 'ts-node taskB', {dependsOn: a});
 const c = task('c', 'ts-node taskC');
 const d = task('d', 'ts-node taskD', {dependsOn: c});
 
-task('eSeriesDependencies', 'ts-node taskE', {dependsOn: tasksSeries('cdSeries', b, d)});
-task('eParallelDependencies', 'ts-node taskE', {dependsOn: tasksParallel('cdParallel', b, d)});
+const eSeriesDependencies = task('eSeriesDependencies', 'ts-node taskE', {dependsOn: tasksSeries('cdSeries', b, d)});
+const eParallelDependencies = task('eParallelDependencies', 'ts-node taskE', {dependsOn: tasksParallel('cdParallel', b, d)});
+tasksSeries('eSeriesAndParallelDependencies', eSeriesDependencies, eParallelDependencies);
+tasksSeries('eParallelAndSeriesDependencies', eParallelDependencies, eSeriesDependencies);
+tasksSeries('eSeriesAndSeriesDependencies', eSeriesDependencies, eSeriesDependencies);
+tasksSeries('eParallelAndParallelDependencies', eParallelDependencies, eParallelDependencies);

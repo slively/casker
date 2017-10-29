@@ -16,15 +16,18 @@ const throwError = (log: string, logs: string) => {
 };
 
 export const serial: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
-	return args.reduce((nextIndex, arg) => {
-		const index = logs.indexOf(arg, nextIndex);
+	return args.reduce(
+		(nextIndex, arg) => {
+			const index = logs.indexOf(arg, nextIndex);
 
-		if (index === -1) {
-			throwError(arg, logs);
-		}
+			if (index === -1) {
+				throwError(arg, logs);
+			}
 
-		return index;
-	}, currentIndex);
+			return index;
+		},
+		currentIndex
+	);
 };
 
 export const parallel: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
@@ -34,7 +37,7 @@ export const parallel: ComposableLogVerifier = (...args: string[]) => (logs: str
 	for (const arg of args) {
 		let index = -1;
 
-		while(foundIndexes.indexOf(index) > -1) {
+		while (foundIndexes.indexOf(index) > -1) {
 			index = logs.indexOf(arg, index + 1);
 
 			if (index === -1) {
