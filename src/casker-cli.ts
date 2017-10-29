@@ -121,7 +121,8 @@ Builder.launch(
 						}
 
 						runningTasks.delete(childProcess);
-					});
+					}
+				);
 
 				runningTasks.set(childProcess, t);
 
