@@ -1,4 +1,4 @@
-import {createExampleProjectTaskRunner, parallel, serial, verifyLogs} from './utils';
+import {createExampleProjectTaskRunner, parallel, series, verifyLogs} from './utils';
 
 const runTask = createExampleProjectTaskRunner('simple');
 
@@ -6,19 +6,19 @@ describe('simple', () => {
 
 	it('should run task a', () =>
 		runTask('a')
-			.then(verifyLogs(serial('weeeeeee!')))
+			.then(verifyLogs(series('weeeeeee!')))
 	);
 
 	it('should run task b', () =>
 		runTask('b')
-			.then(verifyLogs(serial('weeeeeee!', 'woooooo!')))
+			.then(verifyLogs(series('weeeeeee!', 'woooooo!')))
 	);
 
 	it('should run task c', () =>
 		runTask('c')
 			.then(verifyLogs(
-				serial('weeeeeee!', 'weeeeeee!', 'weeeeeee!'),
-				serial('woooooo!')
+				series('weeeeeee!', 'weeeeeee!', 'weeeeeee!'),
+				series('woooooo!')
 			))
 	);
 
@@ -26,22 +26,22 @@ describe('simple', () => {
 		runTask('d')
 			.then(verifyLogs(
 				parallel('weeeeeee!', 'weeeeeee!', 'weeeeeee!'),
-				serial('woooooo!')
+				series('woooooo!')
 			))
 	);
 
 	it('should run task e', () =>
 		runTask('e')
 			.then(verifyLogs(
-				serial('woooooo!'),
-				serial('weeeeeee!', 'weeeeeee!', 'weeeeeee!')
+				series('woooooo!'),
+				series('weeeeeee!', 'weeeeeee!', 'weeeeeee!')
 			))
 	);
 
 	it('should run task f', () =>
 		runTask('f')
 			.then(verifyLogs(
-				serial('woooooo!'),
+				series('woooooo!'),
 				parallel('weeeeeee!', 'weeeeeee!', 'weeeeeee!')
 			))
 	);

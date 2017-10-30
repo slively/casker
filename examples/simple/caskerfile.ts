@@ -2,8 +2,7 @@ import {casker} from '../../dist/casker';
 
 const {task, tasksParallel, tasksSeries} = casker();
 
-const loop = task('loop', 'ts-node ./loop', {isLongRunning: true, description: 'runs loop'});
-const a = task('a', 'ts-node taskA', {description: 'runs taskA', dependsOn: loop});
+const a = task('a', 'ts-node taskA', {description: 'runs taskA'});
 const aX3Series = tasksSeries('ax3-series', a, a, a);
 const aX3Parallel = tasksParallel('ax3-parallel', a, a, a);
 

@@ -1,4 +1,4 @@
-import {createExampleProjectTaskRunner, parallel, serial, verifyLogs} from './utils';
+import {createExampleProjectTaskRunner, parallel, series, verifyLogs} from './utils';
 
 const runTask = createExampleProjectTaskRunner('dependency-graph');
 
@@ -8,7 +8,7 @@ describe('dependency-graph', () => {
 	it('should run task eSeriesDependencies', () =>
 		runTask('eSeriesDependencies')
 			.then(verifyLogs(
-				serial('task a', 'task b', 'task c', 'task d', 'task e')
+				series('task a', 'task b', 'task c', 'task d', 'task e')
 			))
 	);
 
@@ -17,17 +17,17 @@ describe('dependency-graph', () => {
 			.then(verifyLogs(
 				parallel('task a', 'task c'),
 				parallel('task b', 'task d'),
-				serial('task e')
+				series('task e')
 			))
 	);
 
 	it('should run task eSeriesAndParallelDependencies', () =>
 		runTask('eSeriesAndParallelDependencies')
 			.then(verifyLogs(
-				serial('task a', 'task b', 'task c', 'task d', 'task e'),
+				series('task a', 'task b', 'task c', 'task d', 'task e'),
 				parallel('task a', 'task c'),
 				parallel('task b', 'task d'),
-				serial('task e')
+				series('task e')
 			))
 	);
 
@@ -36,16 +36,16 @@ describe('dependency-graph', () => {
 			.then(verifyLogs(
 				parallel('task a', 'task c'),
 				parallel('task b', 'task d'),
-				serial('task e'),
-				serial('task a', 'task b', 'task c', 'task d', 'task e')
+				series('task e'),
+				series('task a', 'task b', 'task c', 'task d', 'task e')
 			))
 	);
 
 	it('should run task eSeriesAndSeriesDependencies', () =>
 		runTask('eSeriesAndSeriesDependencies')
 			.then(verifyLogs(
-				serial('task a', 'task b', 'task c', 'task d', 'task e'),
-				serial('task a', 'task b', 'task c', 'task d', 'task e')
+				series('task a', 'task b', 'task c', 'task d', 'task e'),
+				series('task a', 'task b', 'task c', 'task d', 'task e')
 			))
 	);
 

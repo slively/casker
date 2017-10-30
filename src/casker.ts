@@ -5,7 +5,7 @@ export const registeredTasks: TasksMap = new Map<string, Task | Tasks>();
 
 export type CreateTaskOptions = {
 	env?: object;
-	isLongRunning?: boolean;
+	runInBackground?: boolean;
 	description?: string;
 	dependsOn?: Task | Tasks;
 	onExit?: Task | Tasks;
@@ -16,7 +16,7 @@ export class Task {
 							readonly cmd: string,
 							readonly cwd: string,
 							readonly env: object = {},
-							readonly isLongRunning: boolean = false,
+							readonly runInBackground: boolean = false,
 							readonly description: string = '',
 							readonly dependsOn?: Task | Tasks,
 							readonly onExit?: Task | Tasks) {
@@ -39,8 +39,8 @@ export class TaskBuilder {
 	tasksSeries = (name: string, ...tasks: Task[]): Tasks => this.tasks(this.createTaskName(name), tasks, false);
 
 	task = (name: string, cmd: string, options: CreateTaskOptions = {}): Task => {
-		const {env, isLongRunning, description, dependsOn, onExit} = options;
-		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, isLongRunning, description, dependsOn, onExit);
+		const {env, runInBackground, description, dependsOn, onExit} = options;
+		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, runInBackground, description, dependsOn, onExit);
 
 		this.registerTask(t);
 

@@ -46,11 +46,6 @@ const Builder = new Liftoff({
 	extensions: require('interpret').jsVariants
 });
 
-const logFailureAndExit = (e: TaskFailure) => {
-	logger.error(`Task ${e.name} failed`);
-	process.exit(1);
-};
-
 if (argv.cwd) {
 	process.chdir(argv.cwd);
 }
@@ -116,7 +111,7 @@ Builder.launch(
 						logger.info((stderr.length ? stderr : stdout).trim());
 						taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
 
-						if (!t.isLongRunning) {
+						if (!t.runInBackground) {
 							didFail ? reject({name: t.name}) : resolve();
 						}
 
@@ -126,11 +121,11 @@ Builder.launch(
 
 				runningTasks.set(childProcess, t);
 
-				if (t.isLongRunning) {
+				if (t.runInBackground) {
 					setImmediate(() => resolve());
 				}
 			})
-				.then(() => (t.onExit && !t.isLongRunning) ? runTaskOrTasks(t.onExit) : undefined);
+				.then(() => (t.onExit && !t.runInBackground) ? runTaskOrTasks(t.onExit) : undefined);
 		};
 
 		const runTasks = (tasks: Tasks): Promise<void> =>
@@ -152,22 +147,31 @@ Builder.launch(
 				: promiseSeries(t.tasks.map(t2 => () => runTaskWithDependencies(t2)))
 		};
 
-		const killAllTasks = () => {
-			runningTasks.forEach((t: Task, cp: ChildProcess) => {
-				treeKill(
-					cp.pid,
-					undefined,
-					() => {
-						if (t.onExit !== undefined) {
-							runTaskOrTasks(t.onExit)
-								.then(killAllTasks, logFailureAndExit);
-						}
-					}
-				);
-			});
+		const killAllTasks = (error?: TaskFailure | void) => {
+			if (error) {
+				logger.error(`Task ${error.name} failed`);
+			}
+
+			// TODO: deal with killing background processes run onExit? Or should that just be discouraged?
+			Promise.all(
+				Array.from(runningTasks.entries()).map(([cp, t]: [ChildProcess, Task]) =>
+					new Promise(((resolve, reject) => {
+							treeKill(
+								cp.pid,
+								undefined,
+								() => {
+									if (t.onExit !== undefined) {
+										runTaskWithDependencies(t.onExit).then(() => resolve(), (e) => reject(e));
+									}
+								}
+							);
+						})
+					)
+				)
+			).then(() => process.exit(), () => process.exit(1));
 		};
 
 		process.on('SIGINT', killAllTasks);
-		runTaskWithDependencies(task).then(killAllTasks, logFailureAndExit);
+		runTaskWithDependencies(task).then(killAllTasks, killAllTasks);
 	}
 );

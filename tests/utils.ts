@@ -15,7 +15,7 @@ const throwError = (log: string, logs: string) => {
 	throw new Error(`${logs}\nLog not found in correct place: ${log}`);
 };
 
-export const serial: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
+export const series: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
 	return args.reduce(
 		(nextIndex, arg) => {
 			const index = logs.indexOf(arg, nextIndex);
