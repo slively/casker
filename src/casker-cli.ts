@@ -4,6 +4,7 @@ import {ChildProcess, execFile} from 'child_process';
 import * as treeKill from 'tree-kill';
 import {join, delimiter} from 'path';
 import {logger, createTaskLogger} from './logger';
+import {checkUpToDate} from './upToDate';
 
 const packageJson: { [key: string]: string } = require('../package.json');
 const Liftoff: any = require('liftoff');
@@ -71,7 +72,8 @@ Builder.launch(
 
 		require(env.configPath);
 		type ModuleTaskType = new () => Task;
-		const {registeredTasks, Task: ModuleTask}: { registeredTasks: TasksMap, Task: ModuleTaskType } = require(env.modulePath);
+		type CaskerModule = { registeredTasks: TasksMap, Task: ModuleTaskType };
+		const {registeredTasks, Task: ModuleTask}: CaskerModule = require(env.modulePath);
 
 		if (!taskName) {
 			return listTasks(registeredTasks);
@@ -88,44 +90,54 @@ Builder.launch(
 		const runTask = (t: Task): Promise<void> => {
 			const taskLogger = createTaskLogger(t.name);
 
-			taskLogger('started');
-
-			return new Promise<void>((resolve, reject) => {
-				const start = Date.now();
-				const nodeModulesBinPath = join(t.cwd, 'node_modules/.bin');
-				const envPath = [t.env[PATH], process.env[PATH], nodeModulesBinPath]
-					.filter(p => !!p)
-					.join(delimiter);
-
-				const childProcess = execFile(
-					sh,
-					[shFlag, t.cmd],
-					{
-						cwd: t.cwd,
-						env: {...t.env, ...process.env, [PATH]: envPath}
-					},
-					(error: Error, stdout: string, stderr: string) => {
-						const didFail = !!error;
-
-						taskLogger('output');
-						logger.info((stderr.length ? stderr : stdout).trim());
-						taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
-
-						if (!t.runInBackground) {
-							didFail ? reject({name: t.name}) : resolve();
-						}
-
-						runningTasks.delete(childProcess);
+			return checkUpToDate(t).then(
+				(isUpToDate: boolean) => {
+					if (isUpToDate) {
+						taskLogger('up-to-date');
+						return;
 					}
-				);
 
-				runningTasks.set(childProcess, t);
+					taskLogger('started');
 
-				if (t.runInBackground) {
-					setImmediate(() => resolve());
-				}
-			})
-				.then(() => (t.onExit && !t.runInBackground) ? runTaskOrTasks(t.onExit) : undefined);
+					return new Promise<void>((resolve, reject) => {
+						const start = Date.now();
+						const nodeModulesBinPath = join(t.cwd, 'node_modules', '.bin');
+						const envPath = [t.env[PATH], process.env[PATH], nodeModulesBinPath]
+							.filter(p => !!p)
+							.join(delimiter);
+
+						const childProcess = execFile(
+							sh,
+							[shFlag, t.cmd],
+							{
+								cwd: t.cwd,
+								env: {...t.env, ...process.env, [PATH]: envPath}
+							},
+							(error: Error, stdout: string, stderr: string) => {
+								const didFail = !!error;
+
+								taskLogger('output');
+								logger.info((stderr.length ? stderr : stdout).trim());
+								taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
+
+								if (!t.runInBackground) {
+									didFail ? reject({name: t.name}) : resolve();
+								}
+
+								runningTasks.delete(childProcess);
+							}
+						);
+
+						runningTasks.set(childProcess, t);
+
+						if (t.runInBackground) {
+							setImmediate(() => resolve());
+						}
+					})
+						.then(() => (t.onExit && !t.runInBackground) ? runTaskOrTasks(t.onExit) : undefined);
+				},
+				(error: Error) => logger.error(`Error checking up-to-date for task ${t.name}: ${error}`)
+			);
 		};
 
 		const runTasks = (tasks: Tasks): Promise<void> =>

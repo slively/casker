@@ -9,13 +9,13 @@ export const createExampleProjectTaskRunner = (projectName: string) => (taskName
 	));
 
 type LogVerifier = (logs: string, currentIndex: number) => number;
-type ComposableLogVerifier = (...args: string[]) => LogVerifier;
+type ComposableLogVerifier = (...args: any[]) => LogVerifier;
 
 const throwError = (log: string, logs: string) => {
 	throw new Error(`${logs}\nLog not found in correct place: ${log}`);
 };
 
-export const series: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
+export const series: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex) => {
 	return args.reduce(
 		(nextIndex, arg) => {
 			const index = logs.indexOf(arg, nextIndex);
@@ -26,12 +26,12 @@ export const series: ComposableLogVerifier = (...args: string[]) => (logs: strin
 
 			return index;
 		},
-		currentIndex
+		-1
 	);
 };
 
-export const parallel: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex = -1) => {
-	let nextIndex = currentIndex;
+export const parallel: ComposableLogVerifier = (...args: string[]) => (logs: string, currentIndex) => {
+	let nextIndex = -1;
 	const foundIndexes: number[] = [];
 
 	for (const arg of args) {
@@ -55,8 +55,18 @@ export const parallel: ComposableLogVerifier = (...args: string[]) => (logs: str
 	return nextIndex;
 };
 
+export const upToDate: ComposableLogVerifier = (taskName: string) => (logs: string, currentIndex) => {
+	for (let i = currentIndex; i < logs.length; i++) {
+		if (logs[i].indexOf(`${taskName} up-to-date`)) {
+			return i;
+		}
+	}
+
+	return -1;
+};
+
 export const verifyLogs = (...verifiers: LogVerifier[]) => (logs: string): boolean => {
-	let currentIndex = -1;
+	let currentIndex = 0;
 
 	for (const verify of verifiers) {
 		currentIndex = verify(logs, currentIndex);
