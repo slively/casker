@@ -1,12 +1,24 @@
 import {exec} from 'child_process';
+import * as rimraf from 'rimraf';
+import {promisify} from 'util';
+import {join} from 'path';
+
+export const getExampleProjectDirectory = (projectName: string) => join('./examples', projectName);
+
+const deleteTaskCache = (projectName: string, taskName: string) =>
+	promisify(rimraf)(join(getExampleProjectDirectory(projectName), '.casker', `${taskName}.json`));
+
+const runTask = (projectName: string, taskName: string) => new Promise<string>(((resolve, reject) =>
+		exec(
+			`node dist/casker-cli.js ${taskName} --cwd ${getExampleProjectDirectory(projectName)}`,
+			(err, stdout, stderr) => err ? reject(err) : resolve(stdout)
+		)
+
+));
 
 export const createExampleProjectTaskRunner = (projectName: string) => (taskName: string) =>
-	new Promise<string>(((resolve, reject) =>
-			exec(
-				`node dist/casker-cli.js ${taskName} --cwd ./examples/${projectName}`,
-				(err, stdout, stderr) => err ? reject(err) : resolve(stdout)
-			)
-	));
+	deleteTaskCache(projectName, taskName)
+		.then(() => runTask(projectName, taskName));
 
 type LogVerifier = (logs: string, currentIndex: number) => number;
 type ComposableLogVerifier = (...args: any[]) => LogVerifier;

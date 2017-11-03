@@ -30,9 +30,11 @@
     "@types/debug": "~0.0.30",
     "@types/glob": "^5.0.33",
     "@types/jest": "~19.2.2",
-    "@types/node": "~7.0.12",
+    "@types/node": "^8.0.47",
+    "@types/rimraf": "^2.0.2",
     "@types/supports-color": "~3.1.0",
     "jest": "~19.0.2",
+    "rimraf": "^2.6.2",
     "ts-jest": "~19.0.8",
     "tslint": "^5.8.0"
   }

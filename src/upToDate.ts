@@ -1,4 +1,4 @@
-import {Task, TaskInput, TaskOutput} from './casker';
+import {Task, TaskInput} from './casker';
 import * as glob from 'glob';
 import {stat} from 'fs';
 import {CacheData, CacheItems, cacheGet, cachePut, compareCacheData} from './cache';
@@ -30,34 +30,28 @@ const getGlobFilesModifiedMs = (cwd: string, io: string): Promise<number[]> =>
 			)
 	));
 
-const resolveInputOrOutput =
+const resolveInput =
 	(cwd: string) =>
-		(io: TaskInput | TaskOutput): Promise<CacheItems> =>
+		(io: TaskInput): Promise<CacheItems> =>
 			typeof io === 'string' ? getGlobFilesModifiedMs(cwd, io) : io();
 
-const resolveInputsOrOutputs = (task: Task, ios: TaskInput[] | TaskOutput[]) =>
-	Promise.all(ios.map(resolveInputOrOutput(task.cwd))).then(flattenCacheItemArrays);
-
-const resolveInputsAndOutputs = (task: Task): Promise<CacheData> =>
-	Promise.all([
-		resolveInputsOrOutputs(task, task.inputs),
-		resolveInputsOrOutputs(task, task.outputs)
-	])
-		.then(([inputs, outputs]) => ({inputs, outputs}));
+const resolveInputs = (task: Task): Promise<CacheData> =>
+	Promise.all(task.inputs.map(resolveInput(task.cwd)))
+		.then(flattenCacheItemArrays)
+		.then(inputs => ({inputs}));
 
 /**
- * Check if a task is up to date by retrieving the previous input/output values and comparing them to the latest input/output values.
- * Once the latest values are calculated they are re-stored for the up to date check.
+ * Check if a task is up to date by retrieving the previous input values and comparing them to the latest input values.
+ * Once the latest values are calculated they are stored for the next up to date check.
  *
  * @param {Task} task
  * @return {Promise<boolean>}
  */
 export const checkUpToDate = (task: Task): Promise<boolean> =>
-	Promise.all([
-		cacheGet(task),
-		resolveInputsAndOutputs(task)
-	])
-		.then(([prevData, currentData]) =>
-			cachePut(task, currentData)
-				.then(() => compareCacheData(prevData, currentData))
-		);
+	(task.inputs.length)
+		? Promise.all([cacheGet(task), resolveInputs(task)])
+			.then(([prevData, currentData]) =>
+				cachePut(task, currentData)
+					.then(() => compareCacheData(prevData, currentData))
+			)
+		: Promise.resolve(false);

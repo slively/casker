@@ -1,9 +1,10 @@
 import {Task} from './casker';
 import {join} from 'path';
 import {readFile} from 'fs';
+import {config} from './config';
 const {outputFile} = require('node-fs-extra');
 
-const getCacheLocation = (task: Task) => join(task.cwd, '.casker', `${task.name}.json`);
+const getCacheLocation = (task: Task) => join(task.cwd, '.casker', config.version, `${task.name}.json`);
 const serialize = (cacheData: CacheData): string => JSON.stringify(cacheData);
 const deSerialize = (cacheData: string): CacheData => JSON.parse(cacheData);
 
@@ -11,7 +12,6 @@ export type CacheItems = (string | number)[];
 
 export interface CacheData {
 	inputs: CacheItems;
-	outputs: CacheItems;
 }
 
 export const cachePut = (task: Task, cacheData: CacheData): Promise<CacheData> =>
@@ -30,7 +30,7 @@ export const cacheGet = (task: Task): Promise<CacheData> =>
 			(err: NodeJS.ErrnoException, data: Buffer) => {
 				if (err) {
 					if (err.code === 'ENOENT') {
-						return resolve({inputs: [], outputs: []});
+						return resolve({inputs: []});
 					}
 
 					return reject(err);
@@ -63,5 +63,4 @@ const compareCacheItems = (prev: CacheItems, current: CacheItems) => {
  * @return {boolean} equivalent
  */
 export const compareCacheData = (prevData: CacheData, currentData: CacheData): boolean =>
-	compareCacheItems(prevData.inputs, currentData.inputs) &&
-	compareCacheItems(prevData.outputs, currentData.outputs);
+	compareCacheItems(prevData.inputs, currentData.inputs)
