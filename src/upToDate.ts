@@ -2,6 +2,7 @@ import {Task, TaskInput} from './casker';
 import * as glob from 'glob';
 import {stat} from 'fs';
 import {CacheData, CacheItems, cacheGet, cachePut, compareCacheData} from './cache';
+import {join} from 'path';
 
 const flattenCacheItemArrays = (arr: CacheItems[]): CacheItems => arr.reduce((a, b) => a.concat(b), []);
 const statFilesAndGetMTime = (files: string[]): Promise<number[]> =>
@@ -15,11 +16,11 @@ const statFilesAndGetMTime = (files: string[]): Promise<number[]> =>
 		)
 	);
 
-const getGlobFilesModifiedMs = (cwd: string, io: string): Promise<number[]> =>
+const getGlobFilesModifiedMs = (cwd: string, input: string): Promise<number[]> =>
 	new Promise(((resolve, reject) =>
 			glob(
-				io,
-				{stat: true, cwd},
+				join(cwd, input),
+				{stat: true},
 				(err: Error, matches: string[]) => {
 					if (err != null) {
 						return reject(err);
@@ -32,8 +33,8 @@ const getGlobFilesModifiedMs = (cwd: string, io: string): Promise<number[]> =>
 
 const resolveInput =
 	(cwd: string) =>
-		(io: TaskInput): Promise<CacheItems> =>
-			typeof io === 'string' ? getGlobFilesModifiedMs(cwd, io) : io();
+		(input: TaskInput): Promise<CacheItems> =>
+			typeof input === 'string' ? getGlobFilesModifiedMs(cwd, input) : input();
 
 const resolveInputs = (task: Task): Promise<CacheData> =>
 	Promise.all(task.inputs.map(resolveInput(task.cwd)))

@@ -2,11 +2,12 @@ import {exec} from 'child_process';
 import * as rimraf from 'rimraf';
 import {promisify} from 'util';
 import {join} from 'path';
+import {config} from '../src/config';
 
 export const getExampleProjectDirectory = (projectName: string) => join('./examples', projectName);
 
 const deleteTaskCache = (projectName: string, taskName: string) =>
-	promisify(rimraf)(join(getExampleProjectDirectory(projectName), '.casker', `${taskName}.json`));
+	promisify(rimraf)(join(getExampleProjectDirectory(projectName), '.casker', config.version, `${taskName}.json`));
 
 const runTask = (projectName: string, taskName: string) => new Promise<string>(((resolve, reject) =>
 		exec(
