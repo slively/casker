@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {registeredTasks, Task, Tasks, TasksMap} from './casker';
+import {registeredTasks, Task, Tasks} from './casker';
 import {ChildProcess, execFile} from 'child_process';
 import * as treeKill from 'tree-kill';
 import {join, delimiter} from 'path';
@@ -139,9 +139,6 @@ const runTask = (t: Task): Promise<void> => {
 };
 
 export default function executeTask(taskName: string) {
-	type TaskType = new () => Task;
-	type CaskerModule = { registeredTasks: TasksMap, Task: TaskType };
-
 	if (!taskName) {
 		return listTasks();
 	}
