@@ -55,4 +55,48 @@ describe('dependency-graph', () => {
 				parallel('task a', 'task b', 'task c', 'task d', 'task e', 'task a', 'task b', 'task c', 'task d', 'task e')
 			))
 	);
+
+	it('should run task serialTasksOfTasks', () =>
+		runTask('serialTasksOfTasks')
+			.then(verifyLogs(
+				// eSeriesAndParallelDependencies
+				series('task a', 'task b', 'task c', 'task d', 'task e'),
+				parallel('task a', 'task c'),
+				parallel('task b', 'task d'),
+				series('task e'),
+				// eParallelAndSeriesDependencies
+				parallel('task a', 'task c'),
+				parallel('task b', 'task d'),
+				series('task e'),
+				series('task a', 'task b', 'task c', 'task d', 'task e'),
+				// eSeriesAndSeriesDependencies
+				series('task a', 'task b', 'task c', 'task d', 'task e'),
+				series('task a', 'task b', 'task c', 'task d', 'task e'),
+				// eParallelAndParallelDependencies
+				parallel('task a', 'task b', 'task c', 'task d', 'task e', 'task a', 'task b', 'task c', 'task d', 'task e')
+			))
+	);
+
+	it('should run task parallelTasksOfTasks', () =>
+		runTask('parallelTasksOfTasks')
+			.then(verifyLogs(
+				parallel(
+					// eSeriesAndParallelDependencies
+					'task a', 'task b', 'task c', 'task d', 'task e',
+					'task a', 'task c',
+					'task b', 'task d',
+					'task e',
+					// eParallelAndSeriesDependencies
+					'task a', 'task c',
+					'task b', 'task d',
+					'task e',
+					'task a', 'task b', 'task c', 'task d', 'task e',
+					// eSeriesAndSeriesDependencies
+					'task a', 'task b', 'task c', 'task d', 'task e',
+					'task a', 'task b', 'task c', 'task d', 'task e',
+					// eParallelAndParallelDependencies
+					'task a', 'task b', 'task c', 'task d', 'task e', 'task a', 'task b', 'task c', 'task d', 'task e'
+				)
+			))
+	);
 });

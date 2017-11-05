@@ -45,7 +45,7 @@ const listTasks = () => {
 const runTasks = (tasks: Tasks): Promise<void> =>
 	tasks.isParallel
 		? Promise.all(tasks.tasks.map(runTask)).then(() => undefined)
-		: promiseSeries(tasks.tasks.map(t => () => runTask(t)));
+		: promiseSeries(tasks.tasks.map(t => () => runTaskOrTasks(t)));
 
 const runTaskOrTasks = (t: Task | Tasks) => t instanceof Task ? runTask(t) : runTasks(t);
 
@@ -182,6 +182,7 @@ if (require.main === module) {
 			const taskName = argv._[0];
 			let localExecuteTask = executeTask;
 
+			// we import the casker-cli module so the cli methods are not exposed to the user via the cakser module
 			if (env.modulePath) {
 				localExecuteTask = require(env.modulePath.replace('casker.js', 'casker-cli.js')).default;
 			} else {

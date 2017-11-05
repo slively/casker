@@ -9,7 +9,23 @@ const d = task('d', 'ts-node taskD', {dependsOn: c});
 
 const eSeriesDependencies = task('eSeriesDependencies', 'ts-node taskE', {dependsOn: tasksSeries('cdSeries', b, d)});
 const eParallelDependencies = task('eParallelDependencies', 'ts-node taskE', {dependsOn: tasksParallel('cdParallel', b, d)});
-tasksSeries('eSeriesAndParallelDependencies', eSeriesDependencies, eParallelDependencies);
-tasksSeries('eParallelAndSeriesDependencies', eParallelDependencies, eSeriesDependencies);
-tasksSeries('eSeriesAndSeriesDependencies', eSeriesDependencies, eSeriesDependencies);
-tasksSeries('eParallelAndParallelDependencies', eParallelDependencies, eParallelDependencies);
+const eSeriesAndParallelDependencies = tasksSeries('eSeriesAndParallelDependencies', eSeriesDependencies, eParallelDependencies);
+const eParallelAndSeriesDependencies = tasksSeries('eParallelAndSeriesDependencies', eParallelDependencies, eSeriesDependencies);
+const eSeriesAndSeriesDependencies = tasksSeries('eSeriesAndSeriesDependencies', eSeriesDependencies, eSeriesDependencies);
+const eParallelAndParallelDependencies = tasksSeries('eParallelAndParallelDependencies', eParallelDependencies, eParallelDependencies);
+
+tasksParallel(
+	'parallelTasksOfTasks',
+	eSeriesAndParallelDependencies,
+	eParallelAndSeriesDependencies,
+	eSeriesAndSeriesDependencies,
+	eParallelAndParallelDependencies
+);
+
+tasksParallel(
+	'serialTasksOfTasks',
+	eSeriesAndParallelDependencies,
+	eParallelAndSeriesDependencies,
+	eSeriesAndSeriesDependencies,
+	eParallelAndParallelDependencies
+);

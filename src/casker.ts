@@ -30,7 +30,7 @@ export class Task {
 export class Tasks {
 	constructor(readonly name: string,
 							readonly description: string = '',
-							readonly tasks: Task[] = [],
+							readonly tasks: (Task | Tasks)[] = [],
 							readonly isParallel: boolean = true) {
 	}
 }
@@ -39,8 +39,8 @@ export class TaskBuilder {
 	constructor(private namespace: string = '', private cwd: string = process.cwd()) {
 	}
 
-	tasksParallel = (name: string, ...tasks: Task[]): Tasks => this.tasks(this.createTaskName(name), tasks, true);
-	tasksSeries = (name: string, ...tasks: Task[]): Tasks => this.tasks(this.createTaskName(name), tasks, false);
+	tasksParallel = (name: string, ...tasks: (Task | Tasks)[]): Tasks => this.tasks(this.createTaskName(name), tasks, true);
+	tasksSeries = (name: string, ...tasks: (Task | Tasks)[]): Tasks => this.tasks(this.createTaskName(name), tasks, false);
 
 	task = (name: string, cmd: string, options: CreateTaskOptions = {}): Task => {
 		const {env, runInBackground, description, dependsOn, onExit, inputs = []} = options;
@@ -55,7 +55,7 @@ export class TaskBuilder {
 		return `${this.namespace.length ? `${this.namespace}:` : ''}${name}`;
 	}
 
-	private tasks(name: string, tasks: Task[], isParallel: boolean): Tasks {
+	private tasks(name: string, tasks: (Task | Tasks)[], isParallel: boolean): Tasks {
 		const t = new Tasks(name, undefined, tasks, isParallel);
 
 		this.registerTask(t);
