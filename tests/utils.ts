@@ -1,4 +1,4 @@
-import {exec} from 'child_process';
+import {ChildProcess, exec, spawn} from 'child_process';
 import * as rimraf from 'rimraf';
 import {promisify} from 'util';
 import {join} from 'path';
@@ -14,12 +14,21 @@ const runTask = (projectName: string, taskName: string) => new Promise<string>((
 			`node dist/casker-cli.js ${taskName} --cwd ${getExampleProjectDirectory(projectName)}`,
 			(err, stdout, stderr) => err ? reject(err) : resolve(stdout)
 		)
-
 ));
 
 export const createExampleProjectTaskRunner = (projectName: string) => (taskName: string) =>
 	deleteTaskCache(projectName, taskName)
 		.then(() => runTask(projectName, taskName));
+
+export const streamTask = (projectName: string, taskName: string) =>
+	spawn(
+		'node',
+		['dist/casker-cli.js', taskName, '--cwd', getExampleProjectDirectory(projectName)]
+	);
+
+export const createExampleProjectTasStreamer = (projectName: string) => (taskName: string) =>
+	deleteTaskCache(projectName, taskName)
+		.then(() => streamTask(projectName, taskName));
 
 type LogVerifier = (logs: string, currentIndex: number) => number;
 type ComposableLogVerifier = (...args: any[]) => LogVerifier;
@@ -87,3 +96,32 @@ export const verifyLogs = (...verifiers: LogVerifier[]) => (logs: string): boole
 
 	return true;
 };
+
+export const verifyLogStream = (expectedLogStream: string[]) => (cp: ChildProcess) =>
+	new Promise(((resolve, reject) => {
+		let logStream = expectedLogStream;
+		let matchCount = 0;
+
+		cp.stdout.on('data', (data) => {
+			if (logStream[0] === data.toString().trim()) {
+				logStream = logStream.slice(1);
+				matchCount++;
+			}
+		});
+
+		cp.on('close', (code) => {
+			if (code > 1) {
+				return reject('Task failed.');
+			}
+
+			if (logStream.length !== 0) {
+				return reject(`The following items were not matched in the log stream: ${logStream}`);
+			}
+
+			if (matchCount !== expectedLogStream.length) {
+				return reject('The log stream matched, but was not actually streamed.');
+			}
+
+			resolve();
+		});
+	}));

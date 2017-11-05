@@ -12,6 +12,7 @@ export type CreateTaskOptions = {
 	dependsOn?: Task | Tasks;
 	onExit?: Task | Tasks;
 	inputs?: TaskInput[];
+	streamLogs?: boolean;
 }
 
 export class Task {
@@ -21,9 +22,10 @@ export class Task {
 							readonly env: object = {},
 							readonly runInBackground: boolean = false,
 							readonly description: string = '',
-							readonly inputs: TaskInput[],
+							readonly inputs: TaskInput[] = [],
 							readonly dependsOn?: Task | Tasks,
-							readonly onExit?: Task | Tasks) {
+							readonly onExit?: Task | Tasks,
+							readonly streamLogs: boolean = false) {
 	}
 }
 
@@ -43,8 +45,8 @@ export class TaskBuilder {
 	tasksSeries = (name: string, ...tasks: (Task | Tasks)[]): Tasks => this.tasks(this.createTaskName(name), tasks, false);
 
 	task = (name: string, cmd: string, options: CreateTaskOptions = {}): Task => {
-		const {env, runInBackground, description, dependsOn, onExit, inputs = []} = options;
-		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, runInBackground, description, inputs, dependsOn, onExit);
+		const {env, runInBackground, description, dependsOn, onExit, inputs, streamLogs} = options;
+		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, runInBackground, description, inputs, dependsOn, onExit, streamLogs);
 
 		this.registerTask(t);
 

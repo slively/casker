@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import {registeredTasks, Task, Tasks} from './casker';
-import {ChildProcess, execFile} from 'child_process';
+import {ChildProcess, spawn} from 'child_process';
 import * as treeKill from 'tree-kill';
 import {join, delimiter} from 'path';
-import {logger, createTaskLogger} from './logger';
+import {logger, createTaskLogger, Logger} from './logger';
 import {checkUpToDate} from './upToDate';
 
 const packageJson: { [key: string]: string } = require('../package.json');
@@ -85,6 +85,28 @@ const killAllTasks = (error?: TaskFailure | void) => {
 	).then(() => process.exit(), () => process.exit(1));
 };
 
+const aggregateLogs = (taskLogger: Logger, childProcess: ChildProcess) => {
+	const logs: string[] = [];
+	const aggregate = (data: Buffer) => {
+		logs.push(data.toString())
+	};
+
+	childProcess.stdout.on('data', aggregate);
+	childProcess.stderr.on('data', aggregate);
+	childProcess.on('close', () => {
+		taskLogger('output');
+		logger.info(logs.join('\r\n').trim());
+	});
+};
+
+const streamLogs = (taskLogger: Logger, childProcess: ChildProcess) => {
+	const stream = (data: Buffer) => logger.info(data.toString());
+
+	taskLogger('output');
+	childProcess.stdout.on('data', stream);
+	childProcess.stderr.on('data', stream);
+};
+
 const runTask = (t: Task): Promise<void> => {
 	const taskLogger = createTaskLogger(t.name);
 
@@ -104,27 +126,32 @@ const runTask = (t: Task): Promise<void> => {
 					.filter(p => !!p)
 					.join(delimiter);
 
-				const childProcess = execFile(
+				const childProcess = spawn(
 					sh,
 					[shFlag, t.cmd],
 					{
 						cwd: t.cwd,
 						env: {...t.env, ...process.env, [PATH]: envPath}
-					},
-					(error: Error, stdout: string, stderr: string) => {
-						const didFail = !!error;
+					});
 
-						taskLogger('output');
-						logger.info((stderr.length ? stderr : stdout).trim());
-						taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
+				t.streamLogs ? streamLogs(taskLogger, childProcess) : aggregateLogs(taskLogger, childProcess);
 
-						if (!t.runInBackground) {
-							didFail ? reject({name: t.name}) : resolve();
-						}
+				const done = (code: number) => {
+					const didFail = code > 0;
+					taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
 
-						runningTasks.delete(childProcess);
+					if (!t.runInBackground) {
+						didFail ? reject({name: t.name}) : resolve();
 					}
-				);
+
+					runningTasks.delete(childProcess);
+				};
+
+				childProcess.on('close', done);
+				childProcess.on('error', (err: Error) => {
+					taskLogger(`error: ${err}`);
+					done(1);
+				});
 
 				runningTasks.set(childProcess, t);
 
