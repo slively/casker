@@ -47,7 +47,6 @@ lint - Run jshint
 test - Run tests
 ```
 
-
 See [examples](examples) for more.
 
 The [task api](src/casker.ts) is fairly simple and is written in Typescript.
@@ -60,10 +59,17 @@ The [task api](src/casker.ts) is fairly simple and is written in Typescript.
 - Run tasks in series or parallel
 - Multi-Project support
 - Typescript support
+  - Along with any other js variant thanks to [Liftoff](https://www.npmjs.com/package/liftoff) & [interpret](https://www.npmjs.com/package/interpret)
+- Logs are aggregated by task 
+  - With option for streaming logs for any task
+- Run tasks in the background
+  - Will be automatically killed once build is finished
+- Up to date checking of inputs
 
-## TODO
+## Examples
 
-- Ability to leave tasks running (continuous mode)
-  - with log streaming
-- API for verifying if a task should run (up to date checking)
-  - Comes wih file/directory change detection
+*NOTE: The examples include casker from the dist directory whereas a normal project would just import 'casker'.*
+
+See examples of different features and setups [here](examples). 
+
+They are also used for full [functional testing](tests) of features.
