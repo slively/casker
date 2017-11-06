@@ -10,12 +10,12 @@ npm install casker --save-dev && npm install -g casker
 ### original package.json
 ```json
 {
-	"scripts": {
-		"compile": "tsc",
-		"lint": "jshint",
-		"test": "jest",
-		"build": "npm run compile && npm run lint && npm run test"
-	}
+ "scripts": {
+  "compile": "tsc",
+  "lint": "jshint",
+  "test": "jest",
+  "build": "npm run compile && npm run lint && npm run test"
+ }
 }
 ```
 
@@ -35,7 +35,7 @@ tasksParallel('buildParallel', compile, lint, test);
 tasksSeries('buildSeries', compile, lint, test);
 ```
 
-With a bit more effort we now have tasks that will install dependencies before tasks if needed and only re-run when a file actually changes. 
+With a bit more effort we now have tasks that will (if needed) install dependencies before executing tasks and only re-run when a file actually changes. 
 We can also easily parallelize tasks instead of just running them sequentially. As the build grows in complexity the benefits increase.
 
 ### Run a task
