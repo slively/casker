@@ -29,15 +29,13 @@ if (process.platform === 'win32') {
 	});
 }
 
-type TaskFailure = { name: string };
-
 const runningTasks: Map<ChildProcess, Task> = new Map();
 const promiseSeries = (promises: (() => Promise<any>)[]) => promises.reduce((current, next) => current.then(next), Promise.resolve(undefined));
 
 const listTasks = () => {
 	logger.log('Tasks');
 	registeredTasks.forEach((v, k) => {
-		logger.log(`${k} ${v.description ? '-' + v.description : ''}`)
+		logger.log(`${k} ${v.description ? '- ' + v.description : ''}`)
 	});
 	logger.log('');
 };
@@ -61,11 +59,7 @@ const runTaskWithDependencies = (t: Task | Tasks): Promise<void> => {
 		: promiseSeries(t.tasks.map(t2 => () => runTaskWithDependencies(t2)))
 };
 
-const killAllTasks = (error?: TaskFailure | void) => {
-	if (error) {
-		logger.error(`Task ${error.name} failed`);
-	}
-
+const killAllTasks = () => {
 	// TODO: deal with killing background processes run onExit? Or should that just be discouraged?
 	Promise.all(
 		Array.from(runningTasks.entries()).map(([cp, t]: [ChildProcess, Task]) =>

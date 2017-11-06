@@ -31,10 +31,12 @@ export class Task {
 
 export class Tasks {
 	constructor(readonly name: string,
-							readonly description: string = '',
 							readonly tasks: (Task | Tasks)[] = [],
 							readonly isParallel: boolean = true) {
+		this.description = `Execute tasks ${tasks.map(t => t.name).join(', ')} in ${isParallel ? 'parallel' : 'series'}`;
 	}
+
+	readonly description: string;
 }
 
 export class TaskBuilder {
@@ -58,7 +60,7 @@ export class TaskBuilder {
 	}
 
 	private tasks(name: string, tasks: (Task | Tasks)[], isParallel: boolean): Tasks {
-		const t = new Tasks(name, undefined, tasks, isParallel);
+		const t = new Tasks(name, tasks, isParallel);
 
 		this.registerTask(t);
 
