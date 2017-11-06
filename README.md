@@ -1,8 +1,8 @@
 # Casker
 
-A task runner modeled after npm scripts, but with a task dependency graph, easy parallel/serial execution, and up to date checking of inputs.
+A task runner modeled after npm scripts, but with a task dependency graph, easy parallel/serial execution, and up to date checking.
 
-Install locally in project, then global cli will use local version.
+Install locally ina project, then the global cli will use the local version.
 ```
 npm install casker --save-dev && npm install -g casker
 ```
@@ -35,8 +35,8 @@ tasksParallel('buildParallel', compile, lint, test);
 tasksSeries('buildSeries', compile, lint, test);
 ```
 
-With a bit more effort we now have tasks that will make sure dependencies are up to date and only re-run when a file actually changes. 
-We can also easily parallelize tasks instead of just running them sequentially. As the build grows in complexity the benefits only increase.
+With a bit more effort we now have tasks that will install dependencies before tasks if needed and only re-run when a file actually changes. 
+We can also easily parallelize tasks instead of just running them sequentially. As the build grows in complexity the benefits increase.
 
 ### Run a task
 
@@ -77,7 +77,7 @@ buildSeries - Execute tasks compile, lint, test in series
 - Typescript support
   - Along with any other js variant thanks to [Liftoff](https://www.npmjs.com/package/liftoff) & [interpret](https://www.npmjs.com/package/interpret)
 - Logs are aggregated by task 
-  - With option for streaming logs for any task
+  - With option for streaming logs
 - Run tasks in the background
   - Will be automatically killed once build is finished
 - Up to date checking of inputs
@@ -126,27 +126,27 @@ Sets a task to run after this task exits regardless of exit code.
 Good for dropping databases after tests.
 
 ##### inputs
-When the array value is a string it is treated as a glob of files, and the modified timestamp (mtime) 
-from [fs.stat](https://nodejs.org/api/fs.html#fs_stat_time_values) to determine if any matching file as changed. 
+When the array value is a string it is treated as a glob of files, and the modified timestamp (mtime 
+from [fs.stat](https://nodejs.org/api/fs.html#fs_stat_time_values)) is used to determine if any matching file has changed. 
 Otherwise a promise that returns a string or number array can also be defined for custom checking.
 
 ##### streamLogs
 Normally task output is grouped together for easier reading, but when this is set to true 
-the logs will be streamed as they are output from the child process. This is useful for tasks that 
+the logs will be streamed as they are sent from the child process. This is useful for tasks that 
 start a dev server for local development or run tests in a watch mode.
 
-### tasksParallel(name, task1, task2, ...)
+### tasksParallel(name, ...tasks[])
 
 #### name
 
 The name of this task used for running from the command line.
 
-#### task
+#### tasks
 
 Each argument after the name must be a task and will be run in parallel. 
-This task will not complete until all tasks complete.
+This task will not complete until all the defined tasks complete.
 
-### tasksParallel(name, task1, task2, ...)
+### tasksSeries(name, ...tasks[])
 
 #### name
 
@@ -154,5 +154,5 @@ The name of this task used for running from the command line.
 
 #### task
 
-Each argument after the name must be a task and will be run in order. 
-This task will not complete until all tasks complete.
+Each argument after the name must be a task and will be run in the order they are passed. 
+This task will not complete until all the defined tasks complete.
