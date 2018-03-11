@@ -16,8 +16,7 @@ let currentColorIndex = 0;
 
 export const logger = console;
 export type Logger = (msg: string) => void;
-export type TaskLogger = (name: string) => Logger;
-export const createTaskLogger: TaskLogger = name => {
+export const createTaskLogger = (name: string): Logger => {
 	currentColorIndex = currentColorIndex === colors.length - 1 ? 0 : currentColorIndex + 1;
 	const color = colors[currentColorIndex];
 	const format = `\u001b[3${color < 8 ? color : '8;5;' + color};1m%s %s\u001b[0m`;

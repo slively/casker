@@ -3,7 +3,7 @@ import {logger} from './logger';
 export type TasksMap = Map<string, Task | Tasks>;
 export const registeredTasks: TasksMap = new Map<string, Task | Tasks>();
 
-export type TaskInput = string | (() => Promise<string[] | number[]>);
+export type TaskIO = string | ((cwd: string) => Promise<string[] | number[]>);
 
 export type CreateTaskOptions = {
 	env?: object;
@@ -11,7 +11,8 @@ export type CreateTaskOptions = {
 	description?: string;
 	dependsOn?: Task | Tasks;
 	onExit?: Task | Tasks;
-	inputs?: TaskInput[];
+	inputs?: TaskIO[];
+	outputs?: TaskIO[];
 	streamLogs?: boolean;
 }
 
@@ -22,7 +23,8 @@ export class Task {
 							readonly env: object = {},
 							readonly runInBackground: boolean = false,
 							readonly description: string = '',
-							readonly inputs: TaskInput[] = [],
+							readonly inputs: TaskIO[] = [],
+							readonly outputs: TaskIO[] = [],
 							readonly dependsOn?: Task | Tasks,
 							readonly onExit?: Task | Tasks,
 							readonly streamLogs: boolean = false) {
@@ -47,8 +49,8 @@ export class TaskBuilder {
 	tasksSeries = (name: string, ...tasks: (Task | Tasks)[]): Tasks => this.tasks(this.createTaskName(name), tasks, false);
 
 	task = (name: string, cmd: string, options: CreateTaskOptions = {}): Task => {
-		const {env, runInBackground, description, dependsOn, onExit, inputs, streamLogs} = options;
-		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, runInBackground, description, inputs, dependsOn, onExit, streamLogs);
+		const {env, runInBackground, description, dependsOn, onExit, inputs, outputs, streamLogs} = options;
+		const t = new Task(this.createTaskName(name), cmd, this.cwd, env, runInBackground, description, inputs, outputs, dependsOn, onExit, streamLogs);
 
 		this.registerTask(t);
 

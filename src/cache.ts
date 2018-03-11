@@ -12,6 +12,7 @@ export type CacheItems = (string | number)[];
 
 export interface CacheData {
 	inputs: CacheItems;
+	outputs: CacheItems;
 }
 
 export const cachePut = (task: Task, cacheData: CacheData): Promise<CacheData> =>
@@ -30,7 +31,7 @@ export const cacheGet = (task: Task): Promise<CacheData> =>
 			(err: NodeJS.ErrnoException, data: Buffer) => {
 				if (err) {
 					if (err.code === 'ENOENT') {
-						return resolve({inputs: []});
+						return resolve({inputs: [], outputs: []});
 					}
 
 					return reject(err);

@@ -1,4 +1,4 @@
-import {Task, TaskInput} from './casker';
+import {Task, TaskIO} from './casker';
 import * as glob from 'glob';
 import {stat} from 'fs';
 import {CacheData, CacheItems, cacheGet, cachePut, compareCacheData} from './cache';
@@ -31,15 +31,20 @@ const getGlobFilesModifiedMs = (cwd: string, input: string): Promise<number[]> =
 			)
 	));
 
-const resolveInput =
-	(cwd: string) =>
-		(input: TaskInput): Promise<CacheItems> =>
-			typeof input === 'string' ? getGlobFilesModifiedMs(cwd, input) : input();
+const resolveIOCacheItem = (cwd: string) =>
+	(input: TaskIO): Promise<CacheItems> => typeof input === 'string' ? getGlobFilesModifiedMs(cwd, input) : input(cwd);
 
-const resolveInputs = (task: Task): Promise<CacheData> =>
-	Promise.all(task.inputs.map(resolveInput(task.cwd)))
-		.then(flattenCacheItemArrays)
-		.then(inputs => ({inputs}));
+const resolveIOCacheItems = (ios: TaskIO[], cwd: string) =>
+	Promise.all(ios.map(resolveIOCacheItem(cwd))).then(flattenCacheItemArrays);
+
+const resolveTaskIOs = (task: Task): Promise<CacheData> =>
+	Promise.all([
+		resolveIOCacheItems(task.inputs, task.cwd),
+		resolveIOCacheItems(task.outputs, task.cwd)
+	])
+		.then(([inputs, outputs]) => ({inputs, outputs}));
+
+const taskHasIOs = (task: Task) => task.inputs.length || task.outputs.length;
 
 /**
  * Check if a task is up to date by retrieving the previous input values and comparing them to the latest input values.
@@ -49,10 +54,14 @@ const resolveInputs = (task: Task): Promise<CacheData> =>
  * @return {Promise<boolean>}
  */
 export const checkUpToDate = (task: Task): Promise<boolean> =>
-	(task.inputs.length)
-		? Promise.all([cacheGet(task), resolveInputs(task)])
-			.then(([prevData, currentData]) =>
-				cachePut(task, currentData)
-					.then(() => compareCacheData(prevData, currentData))
-			)
+	(taskHasIOs(task))
+		? Promise.all([cacheGet(task), resolveTaskIOs(task)])
+			.then(([prevData, currentData]) => compareCacheData(prevData, currentData))
 		: Promise.resolve(false);
+
+export const saveInputsAndOuputs = (task: Task): Promise<void> =>
+	(taskHasIOs(task))
+		? resolveTaskIOs(task)
+			.then(cacheData => cachePut(task, cacheData))
+			.then(() => undefined)
+		: Promise.resolve();

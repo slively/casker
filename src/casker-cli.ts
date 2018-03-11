@@ -4,7 +4,7 @@ import {ChildProcess, spawn} from 'child_process';
 import * as treeKill from 'tree-kill';
 import {join, delimiter} from 'path';
 import {logger, createTaskLogger, Logger} from './logger';
-import {checkUpToDate} from './upToDate';
+import {checkUpToDate, saveInputsAndOuputs} from './upToDate';
 
 const packageJson: { [key: string]: string } = require('../package.json');
 const Liftoff: any = require('liftoff');
@@ -101,6 +101,48 @@ const streamLogs = (taskLogger: Logger, childProcess: ChildProcess) => {
 	childProcess.stderr.on('data', stream);
 };
 
+const executeTaskCommand = (t: Task, taskLogger: Logger) =>
+	new Promise<void>((resolve, reject) => {
+		const start = Date.now();
+		const nodeModulesBinPath = join(t.cwd, 'node_modules', '.bin');
+		const envPath = [t.env[PATH], process.env[PATH], nodeModulesBinPath]
+			.filter(p => !!p)
+			.join(delimiter);
+
+		const childProcess = spawn(
+			sh,
+			[shFlag, t.cmd],
+			{
+				cwd: t.cwd,
+				env: {...t.env, ...process.env, [PATH]: envPath}
+			});
+
+		t.streamLogs ? streamLogs(taskLogger, childProcess) : aggregateLogs(taskLogger, childProcess);
+
+		const done = (code: number) => {
+			const didFail = code > 0;
+			taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
+
+			if (!t.runInBackground) {
+				didFail ? reject({name: t.name}) : resolve();
+			}
+
+			runningTasks.delete(childProcess);
+		};
+
+		childProcess.on('close', done);
+		childProcess.on('error', (err: Error) => {
+			taskLogger(`error: ${err}`);
+			done(1);
+		});
+
+		runningTasks.set(childProcess, t);
+
+		if (t.runInBackground) {
+			setImmediate(() => resolve());
+		}
+	});
+
 const runTask = (t: Task): Promise<void> => {
 	const taskLogger = createTaskLogger(t.name);
 
@@ -113,46 +155,8 @@ const runTask = (t: Task): Promise<void> => {
 
 			taskLogger('started');
 
-			return new Promise<void>((resolve, reject) => {
-				const start = Date.now();
-				const nodeModulesBinPath = join(t.cwd, 'node_modules', '.bin');
-				const envPath = [t.env[PATH], process.env[PATH], nodeModulesBinPath]
-					.filter(p => !!p)
-					.join(delimiter);
-
-				const childProcess = spawn(
-					sh,
-					[shFlag, t.cmd],
-					{
-						cwd: t.cwd,
-						env: {...t.env, ...process.env, [PATH]: envPath}
-					});
-
-				t.streamLogs ? streamLogs(taskLogger, childProcess) : aggregateLogs(taskLogger, childProcess);
-
-				const done = (code: number) => {
-					const didFail = code > 0;
-					taskLogger(`finished (${(Date.now() - start) / 1000}s)`);
-
-					if (!t.runInBackground) {
-						didFail ? reject({name: t.name}) : resolve();
-					}
-
-					runningTasks.delete(childProcess);
-				};
-
-				childProcess.on('close', done);
-				childProcess.on('error', (err: Error) => {
-					taskLogger(`error: ${err}`);
-					done(1);
-				});
-
-				runningTasks.set(childProcess, t);
-
-				if (t.runInBackground) {
-					setImmediate(() => resolve());
-				}
-			})
+			return executeTaskCommand(t, taskLogger)
+				.then(() => saveInputsAndOuputs(t))
 				.then(() => (t.onExit && !t.runInBackground) ? runTaskOrTasks(t.onExit) : undefined);
 		},
 		(error: Error) => logger.error(`Error checking up-to-date for task ${t.name}: ${error}`)
